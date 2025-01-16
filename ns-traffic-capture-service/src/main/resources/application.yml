@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+traffic-capture:
+  interface-name: "\Device\NPF_{D7EDCDA4-33B7-4B76-B235-4EF3ABF0481B}"
+  log-directory: "logs"
+
+logging:
+  level:
+    root: INFO
+    yakdanol.nstrafficcaptureservice: DEBUG
+  file:
+    name: traffic-capture.log
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
