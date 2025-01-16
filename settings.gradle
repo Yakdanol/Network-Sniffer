@@ -1,1 +1,3 @@
 rootProject.name = 'Network-Sniffer'
+
+include ':ns-traffic-capture-service'
