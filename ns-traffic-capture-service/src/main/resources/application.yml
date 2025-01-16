@@ -4,14 +4,20 @@ server:
 traffic-capture:
   interface-name: "\Device\NPF_{D7EDCDA4-33B7-4B76-B235-4EF3ABF0481B}"
   log-directory: "logs"
+  log-format: "json" # Возможные значения: json, xml, text
+  filter: "tcp or udp or http or https or tls"
 
 logging:
   level:
     root: INFO
-    yakdanol.nstrafficcaptureservice: DEBUG
+    org.yakdanol.nstrafficcaptureservice: DEBUG
   file:
     name: traffic-capture.log
 
 spring:
   main:
     allow-bean-definition-overriding: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true

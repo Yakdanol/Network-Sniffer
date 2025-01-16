@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.yakdanol.nstrafficcaptureservice.repository.CapturedPacketRepository;
+
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,8 +15,13 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class FileRotationService {
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final CapturedPacketRepository repository;
     private ScheduledFuture<?> rotationTask;
+
+    public FileRotationService(CapturedPacketRepository repository) {
+        this.repository = repository;
+    }
 
     @PostConstruct
     public void start() {
@@ -32,10 +39,12 @@ public class FileRotationService {
     }
 
     private void rotateFile() {
-        // Реализация смены файла логирования
-        log.info("Rotating log file at {}", LocalDate.now());
-        // Логика ротации файлов, например, закрытие текущего файла и открытие нового
-        // Это может потребовать взаимодействия с CapturedPacketRepository
+        try {
+            repository.rotateLogFile();
+            log.info("Rotated log file at {}", LocalDate.now());
+        } catch (Exception e) {
+            log.error("Error during log file rotation", e);
+        }
     }
 
     @PreDestroy
@@ -44,5 +53,13 @@ public class FileRotationService {
             rotationTask.cancel(true);
         }
         scheduler.shutdownNow();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                log.warn("Scheduler did not terminate in the specified time.");
+            }
+        } catch (InterruptedException e) {
+            log.error("Interrupted during scheduler shutdown", e);
+            Thread.currentThread().interrupt();
+        }
     }
 }
