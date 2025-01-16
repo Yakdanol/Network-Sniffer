@@ -2,10 +2,12 @@ server:
   port: 8081
 
 traffic-capture:
-  interface-name: "\Device\NPF_{D7EDCDA4-33B7-4B76-B235-4EF3ABF0481B}"
-  log-directory: "logs"
-  log-format: "json" # Возможные значения: json, xml, text
-  filter: "tcp or udp or http or https or tls"
+  interface-name: "\Device\NPF_{D7EDCDA4-33B7-4B76-B235-4EF3ABF0481B}" # Имя сетевого интерфейса для захвата трафика
+  log-directory: "logs" # Директория для сохранения лог-файлов
+  log-format: "json" # Формат логирования: json, xml, text
+  filter: "tcp or udp or http or https or tls" # BPF фильтр для захвата пакетов
+  processing-pool-size: 2 # Количество потоков для обработки пакетов
+  queue-size: 100 # Размер очереди для буферизации пакетов
 
 logging:
   level:

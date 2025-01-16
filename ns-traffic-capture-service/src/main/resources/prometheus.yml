@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'nstraffic-capture-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['nstraffic-capture-service:8081']
+
+# http://localhost:8081/actuator/prometheus или http://localhost:9090

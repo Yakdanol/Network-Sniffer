@@ -18,18 +18,24 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class TrafficCaptureService {
+    @Value("${traffic-capture.processing-pool-size}")
+    private int processingPoolSize;
+
+    @Value("${traffic-capture.queue-size}")
+    private int queueSize;
+
+    @Value("${traffic-capture.filter}")
+    private String filter;
+
     private final PcapHandle handle;
     private final CapturedPacketRepository repository;
     private final PacketToJsonConverter converter;
     private final FileRotationService fileRotationService;
     private final TrafficCaptureMetrics metrics;
 
-    private final BlockingQueue<Packet> packetQueue = new LinkedBlockingQueue<>(100);
+    private final BlockingQueue<Packet> packetQueue = new LinkedBlockingQueue<>(queueSize);
     private final ExecutorService captureExecutor = Executors.newSingleThreadExecutor();
-    private final ExecutorService processingExecutor = Executors.newFixedThreadPool(4); // Пул из 4 потоков
-
-    @Value("${traffic-capture.filter}")
-    private String filter;
+    private final ExecutorService processingExecutor = Executors.newFixedThreadPool(processingPoolSize); // Пул из 4 потоков
 
     public TrafficCaptureService(PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
@@ -59,7 +65,7 @@ public class TrafficCaptureService {
         });
 
         // Запуск задач обработки пакетов
-        for (int i = 0; i < 4; i++) { // 4 потока обработки
+        for (int i = 0; i < processingPoolSize; i++) { // 4 потока обработки
             processingExecutor.submit(this::consumePackets);
         }
 

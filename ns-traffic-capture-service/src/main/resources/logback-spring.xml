@@ -4,7 +4,7 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- архивирование ежедневно -->
             <fileNamePattern>logs/traffic-capture-%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
+            <maxHistory>5</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>%d{HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
