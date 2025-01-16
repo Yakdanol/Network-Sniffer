@@ -1,6 +1,8 @@
 package org.yakdanol.nstrafficcaptureservice.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
@@ -15,6 +17,7 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class FileRotationService {
+    private static final Logger logger = LoggerFactory.getLogger(FileRotationService.class);
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final CapturedPacketRepository repository;
     private ScheduledFuture<?> rotationTask;
@@ -29,7 +32,7 @@ public class FileRotationService {
         long period = Duration.ofDays(1).toMillis();
 
         rotationTask = scheduler.scheduleAtFixedRate(this::rotateFile, initialDelay, period, TimeUnit.MILLISECONDS);
-        log.info("File rotation scheduled to start in {} milliseconds and repeat every {} milliseconds", initialDelay, period);
+        logger.info("File rotation scheduled to start in {} milliseconds and repeat every {} milliseconds", initialDelay, period);
     }
 
     private long computeInitialDelay() {
@@ -41,9 +44,9 @@ public class FileRotationService {
     private void rotateFile() {
         try {
             repository.rotateLogFile();
-            log.info("Rotated log file at {}", LocalDate.now());
+            logger.info("Rotated logger file at {}", LocalDate.now());
         } catch (Exception e) {
-            log.error("Error during log file rotation", e);
+            logger.error("Error during logger file rotation", e);
         }
     }
 
@@ -55,10 +58,10 @@ public class FileRotationService {
         scheduler.shutdownNow();
         try {
             if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                log.warn("Scheduler did not terminate in the specified time.");
+                logger.warn("Scheduler did not terminate in the specified time.");
             }
         } catch (InterruptedException e) {
-            log.error("Interrupted during scheduler shutdown", e);
+            logger.error("Interrupted during scheduler shutdown", e);
             Thread.currentThread().interrupt();
         }
     }

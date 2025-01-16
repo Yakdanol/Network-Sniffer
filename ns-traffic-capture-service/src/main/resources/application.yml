@@ -2,7 +2,7 @@ server:
   port: 8081
 
 traffic-capture:
-  interface-name: "\Device\NPF_{D7EDCDA4-33B7-4B76-B235-4EF3ABF0481B}" # Имя сетевого интерфейса для захвата трафика
+  interface-name: "RZ616 Wi-Fi 6E 160MHz" # Имя сетевого интерфейса для захвата трафика
   log-directory: "logs" # Директория для сохранения лог-файлов
   log-format: "json" # Формат логирования: json, xml, text
   filter: "tcp or udp or http or https or tls" # BPF фильтр для захвата пакетов

@@ -3,6 +3,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.core.*;
 import org.pcap4j.packet.Packet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficcaptureservice.metrics.TrafficCaptureMetrics;
@@ -27,6 +30,7 @@ public class TrafficCaptureService {
     @Value("${traffic-capture.filter}")
     private String filter;
 
+    private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
     private final PcapHandle handle;
     private final CapturedPacketRepository repository;
     private final PacketToJsonConverter converter;
@@ -37,6 +41,7 @@ public class TrafficCaptureService {
     private final ExecutorService captureExecutor = Executors.newSingleThreadExecutor();
     private final ExecutorService processingExecutor = Executors.newFixedThreadPool(processingPoolSize); // Пул из 4 потоков
 
+    @Autowired
     public TrafficCaptureService(PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
                                  PacketToJsonConverter converter,
@@ -57,15 +62,15 @@ public class TrafficCaptureService {
                 PacketListener listener = this::enqueuePacket;
                 handle.loop(-1, listener);
             } catch (InterruptedException e) {
-                log.warn("Packet capture interrupted", e);
+                logger.warn("Packet capture interrupted", e);
                 Thread.currentThread().interrupt();
             } catch (PcapNativeException | NotOpenException e) {
-                log.error("Error in packet capture", e);
+                logger.error("Error in packet capture", e);
             }
         });
 
         // Запуск задач обработки пакетов
-        for (int i = 0; i < processingPoolSize; i++) { // 4 потока обработки
+        for (int i = 0; i < processingPoolSize; i++) {
             processingExecutor.submit(this::consumePackets);
         }
 
@@ -78,7 +83,7 @@ public class TrafficCaptureService {
             packetQueue.put(packet);
             metrics.incrementCapturedPackets();
         } catch (InterruptedException e) {
-            log.error("Interrupted while enqueuing packet", e);
+            logger.error("Interrupted while enqueuing packet", e);
             Thread.currentThread().interrupt();
         }
     }
@@ -90,11 +95,11 @@ public class TrafficCaptureService {
                 CapturedPacket capturedPacket = converter.convert(packet);
                 repository.save(capturedPacket);
             } catch (InterruptedException e) {
-                log.warn("Packet processing thread interrupted", e);
+                logger.warn("Packet processing thread interrupted", e);
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
                 metrics.incrementProcessingErrors();
-                log.error("Error processing packet from queue", e);
+                logger.error("Error processing packet from queue", e);
             }
         }
     }
@@ -105,19 +110,19 @@ public class TrafficCaptureService {
             handle.breakLoop();
             handle.close();
         } catch (NotOpenException e) {
-            log.error("Error closing pcap handle", e);
+            logger.error("Error closing pcap handle", e);
         }
         captureExecutor.shutdownNow();
         processingExecutor.shutdownNow();
         try {
             if (!captureExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                log.warn("CaptureExecutor did not terminate in the specified time.");
+                logger.warn("CaptureExecutor did not terminate in the specified time.");
             }
             if (!processingExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                log.warn("ProcessingExecutor did not terminate in the specified time.");
+                logger.warn("ProcessingExecutor did not terminate in the specified time.");
             }
         } catch (InterruptedException e) {
-            log.error("Interrupted during shutdown", e);
+            logger.error("Interrupted during shutdown", e);
             Thread.currentThread().interrupt();
         }
         fileRotationService.stop();

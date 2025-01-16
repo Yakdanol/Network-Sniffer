@@ -18,7 +18,7 @@ public class Pcap4jConfig {
     public PcapNetworkInterface networkInterface() throws Exception {
         List<PcapNetworkInterface> allDevs = Pcaps.findAllDevs();
         return allDevs.stream()
-                .filter(dev -> dev.getName().equals(interfaceName))
+                .filter(dev -> dev.getDescription().equals(interfaceName))
                 .findFirst()
                 .orElseThrow(() -> new Exception("Network interface not found: " + interfaceName));
     }

@@ -2,6 +2,8 @@ package org.yakdanol.nstrafficcaptureservice.util;
 
 import org.pcap4j.packet.IpPacket;
 import org.pcap4j.packet.Packet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
 
@@ -10,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 
 @Component
 public class PacketToJsonConverter {
-
+    private static final Logger logger = LoggerFactory.getLogger(PacketToJsonConverter.class);
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public CapturedPacket convert(Packet packet) {
