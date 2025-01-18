@@ -3,11 +3,12 @@ server:
 
 traffic-capture:
   interface-name: "RZ616 Wi-Fi 6E 160MHz" # Имя сетевого интерфейса для захвата трафика
-  log-directory: "logs" # Директория для сохранения лог-файлов
+  log-directory: "ns-traffic-capture-service\\logs" # Директория для сохранения лог-файлов микросервиса
   log-format: "json" # Формат логирования: json, xml, text
   filter: "tcp or udp or http or https or tls" # BPF фильтр для захвата пакетов
   processing-pool-size: 2 # Количество потоков для обработки пакетов
   queue-size: 100 # Размер очереди для буферизации пакетов
+  console-logging: true # Логирование данных в консоль
 
 logging:
   level:

@@ -1,4 +1,5 @@
 package org.yakdanol.nstrafficcaptureservice.service;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.core.*;
@@ -37,18 +38,17 @@ public class TrafficCaptureService {
     private final FileRotationService fileRotationService;
     private final TrafficCaptureMetrics metrics;
 
-    private final BlockingQueue<Packet> packetQueue = new LinkedBlockingQueue<>(queueSize);
-    private final ExecutorService captureExecutor = Executors.newSingleThreadExecutor();
-    private final ExecutorService processingExecutor = Executors.newFixedThreadPool(processingPoolSize); // Пул из 4 потоков
+    private BlockingQueue<Packet> packetQueue;
+    private ExecutorService captureExecutor;
+    private ExecutorService processingExecutor;
 
     @Autowired
     public TrafficCaptureService(PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
                                  PacketToJsonConverter converter,
                                  FileRotationService fileRotationService,
-                                 MeterRegistry meterRegistry) throws PcapNativeException, NotOpenException {
+                                 MeterRegistry meterRegistry) throws PcapNativeException {
         this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
-        this.handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
         this.repository = repository;
         this.converter = converter;
         this.fileRotationService = fileRotationService;
@@ -56,7 +56,12 @@ public class TrafficCaptureService {
     }
 
     @PostConstruct
-    public void startCapture() {
+    public void startCapture() throws PcapNativeException, NotOpenException {
+//        this.handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
+        this.packetQueue = new LinkedBlockingQueue<>(queueSize);
+        this.captureExecutor = Executors.newSingleThreadExecutor();
+        this.processingExecutor = Executors.newFixedThreadPool(processingPoolSize);
+
         captureExecutor.submit(() -> {
             try {
                 PacketListener listener = this::enqueuePacket;

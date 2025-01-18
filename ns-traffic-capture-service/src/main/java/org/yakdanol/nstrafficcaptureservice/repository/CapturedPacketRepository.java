@@ -1,14 +1,15 @@
 package org.yakdanol.nstrafficcaptureservice.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
-import org.yakdanol.nstrafficcaptureservice.service.TrafficCaptureService;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 @Slf4j
+@NoArgsConstructor
 @Repository
 public class CapturedPacketRepository {
     @Value("${traffic-capture.log-directory}")
@@ -28,8 +30,9 @@ public class CapturedPacketRepository {
     private BufferedWriter bufferedWriter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public CapturedPacketRepository() throws IOException {
-        openLogFile();
+    @PostConstruct
+    private void init() throws IOException {
+        openLogFile(); // Открытие файла после инициализации
     }
 
     private synchronized void openLogFile() throws IOException {
@@ -42,6 +45,7 @@ public class CapturedPacketRepository {
         try {
             String logEntry = switch (logFormat.toLowerCase()) {
                 case "text" -> packet.toString();
+                case "xml" -> convertToXml(packet);
                 default -> objectMapper.writeValueAsString(packet);
             };
             bufferedWriter.write(logEntry);
@@ -51,18 +55,21 @@ public class CapturedPacketRepository {
         }
     }
 
-//    private String convertToXml(CapturedPacket packet) {
-//        // Реализация преобразования объекта в XML с использованием JAXB
-//        // Для упрощения, возвращаем строковое представление
-//        return "<CapturedPacket>" +
-//                "<timestamp>" + packet.getTimestamp() + "</timestamp>" +
-//                "<sourceIp>" + packet.getSourceIp() + "</sourceIp>" +
-//                "<destinationIp>" + packet.getDestinationIp() + "</destinationIp>" +
-//                "<protocol>" + packet.getProtocol() + "</protocol>" +
-//                "<length>" + packet.getLength() + "</length>" +
-//                "<data>" + packet.getData() + "</data>" +
-//                "</CapturedPacket>";
-//    }
+    private String convertToXml(CapturedPacket packet) {
+        // Реализация преобразования объекта в XML с использованием JAXB
+        // Для упрощения, возвращаем строковое представление
+        StringBuilder xmlBuilder = new StringBuilder(2048)
+                .append("<CapturedPacket>")
+                .append("<timestamp>").append(packet.getTimestamp()).append("</timestamp>")
+                .append("<sourceIp>").append(packet.getSourceIp()).append("</sourceIp>")
+                .append("<destinationIp>").append(packet.getDestinationIp()).append("</destinationIp>")
+                .append("<protocol>").append(packet.getProtocol()).append("</protocol>")
+                .append("<length>").append(packet.getLength()).append("</length>")
+                .append("<data>").append(packet.getData()).append("</data>")
+                .append("</CapturedPacket>");
+
+        return xmlBuilder.toString();
+    }
 
     public synchronized void rotateLogFile() {
         try {

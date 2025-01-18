@@ -12,7 +12,6 @@ import java.time.format.DateTimeFormatter;
 
 @Component
 public class PacketToJsonConverter {
-    private static final Logger logger = LoggerFactory.getLogger(PacketToJsonConverter.class);
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     public CapturedPacket convert(Packet packet) {
