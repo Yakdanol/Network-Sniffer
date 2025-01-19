@@ -3,12 +3,12 @@ package org.yakdanol.nstrafficcaptureservice.repository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
 import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
 
 import java.io.BufferedWriter;
@@ -17,18 +17,18 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 @Slf4j
-@NoArgsConstructor
 @Repository
 public class CapturedPacketRepository {
-    @Value("${traffic-capture.log-directory}")
-    private String logDirectory;
 
-    @Value("${traffic-capture.log-format}")
-    private String logFormat;
-
+    private final TrafficCaptureConfig config;
     private static final Logger logger = LoggerFactory.getLogger(CapturedPacketRepository.class);
     private BufferedWriter bufferedWriter;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Autowired
+    public CapturedPacketRepository(TrafficCaptureConfig config) {
+        this.config = config;
+    }
 
     @PostConstruct
     private void init() throws IOException {
@@ -36,14 +36,14 @@ public class CapturedPacketRepository {
     }
 
     private synchronized void openLogFile() throws IOException {
-        String fileName = String.format("%s/%s.json", logDirectory, LocalDate.now());
+        String fileName = String.format("%s/%s.json", config.getLogDirectory(), LocalDate.now());
         bufferedWriter = new BufferedWriter(new FileWriter(fileName, true));
         logger.info("Opened log file: {}", fileName);
     }
 
     public synchronized void save(CapturedPacket packet) {
         try {
-            String logEntry = switch (logFormat.toLowerCase()) {
+            String logEntry = switch (config.getLogFormat().toLowerCase()) {
                 case "text" -> packet.toString();
                 case "xml" -> convertToXml(packet);
                 default -> objectMapper.writeValueAsString(packet);

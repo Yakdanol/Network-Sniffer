@@ -21,6 +21,7 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class TrafficCaptureService {
+
     private final TrafficCaptureConfig config;
     private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
     private final PcapHandle handle;
