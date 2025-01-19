@@ -36,7 +36,7 @@ public class CapturedPacketRepository {
     }
 
     private synchronized void openLogFile() throws IOException {
-        String fileName = String.format("%s/%s.json", config.getLogDirectory(), LocalDate.now());
+        String fileName = String.format("%s/%s.%s", config.getLogDirectory(), LocalDate.now(), config.getLogFormat());
         bufferedWriter = new BufferedWriter(new FileWriter(fileName, true));
         logger.info("Opened log file: {}", fileName);
     }
@@ -46,6 +46,7 @@ public class CapturedPacketRepository {
             String logEntry = switch (config.getLogFormat().toLowerCase()) {
                 case "text" -> packet.toString();
                 case "xml" -> convertToXml(packet);
+                case "csv" -> convertToCsv(packet);
                 default -> objectMapper.writeValueAsString(packet);
             };
             bufferedWriter.write(logEntry);
@@ -53,6 +54,28 @@ public class CapturedPacketRepository {
         } catch (IOException e) {
             logger.error("Error writing packet to file", e);
         }
+    }
+
+    private String convertToCsv(CapturedPacket packet) {
+        // Собираем данные в строку CSV, экранируем поля с запятыми и кавычками
+        StringBuilder csvBuilder = new StringBuilder();
+        csvBuilder.append(escapeCsvField(packet.getTimestamp())).append(",");
+        csvBuilder.append(escapeCsvField(packet.getSourceIp())).append(",");
+        csvBuilder.append(escapeCsvField(packet.getDestinationIp())).append(",");
+        csvBuilder.append(escapeCsvField(packet.getProtocol())).append(",");
+        csvBuilder.append(packet.getLength()).append(",");
+        csvBuilder.append(escapeCsvField(packet.getData()));
+
+        return csvBuilder.toString();
+    }
+
+    private String escapeCsvField(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        // Экранируем кавычки и заменяем их на две кавычки внутри строки
+        return "\"" + value.replace("\"", "\"\"") + "\"";
     }
 
     private String convertToXml(CapturedPacket packet) {
