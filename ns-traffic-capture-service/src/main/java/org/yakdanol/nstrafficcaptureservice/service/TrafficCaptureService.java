@@ -25,43 +25,37 @@ public class TrafficCaptureService {
     @Value("${traffic-capture.processing-pool-size}")
     private int processingPoolSize;
 
-    @Value("${traffic-capture.queue-size}")
-    private int queueSize;
-
-    @Value("${traffic-capture.filter}")
-    private String filter;
-
     private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
     private final PcapHandle handle;
     private final CapturedPacketRepository repository;
     private final PacketToJsonConverter converter;
     private final FileRotationService fileRotationService;
     private final TrafficCaptureMetrics metrics;
-
-    private BlockingQueue<Packet> packetQueue;
-    private ExecutorService captureExecutor;
-    private ExecutorService processingExecutor;
+    private final BlockingQueue<Packet> packetQueue;
+    private final ExecutorService captureExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService processingExecutor;
 
     @Autowired
     public TrafficCaptureService(PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
                                  PacketToJsonConverter converter,
                                  FileRotationService fileRotationService,
-                                 MeterRegistry meterRegistry) throws PcapNativeException {
+                                 MeterRegistry meterRegistry,
+                                 @Value("${traffic-capture.processing-pool-size}") int processingPoolSize,
+                                 @Value("${traffic-capture.queue-size}") int queueSize,
+                                 @Value("${traffic-capture.filter}") String filter) throws PcapNativeException, NotOpenException {
         this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
+//        this.handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
         this.repository = repository;
         this.converter = converter;
         this.fileRotationService = fileRotationService;
         this.metrics = new TrafficCaptureMetrics(meterRegistry);
+        this.processingExecutor = Executors.newFixedThreadPool(processingPoolSize);
+        this.packetQueue = new LinkedBlockingQueue<>(queueSize);
     }
 
     @PostConstruct
-    public void startCapture() throws PcapNativeException, NotOpenException {
-//        this.handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
-        this.packetQueue = new LinkedBlockingQueue<>(queueSize);
-        this.captureExecutor = Executors.newSingleThreadExecutor();
-        this.processingExecutor = Executors.newFixedThreadPool(processingPoolSize);
-
+    public void startCapture() {
         captureExecutor.submit(() -> {
             try {
                 PacketListener listener = this::enqueuePacket;
