@@ -1,20 +1,19 @@
 package org.yakdanol.nstrafficcaptureservice.service;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.core.*;
 import org.pcap4j.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
 import org.yakdanol.nstrafficcaptureservice.metrics.TrafficCaptureMetrics;
 import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
 import org.yakdanol.nstrafficcaptureservice.repository.CapturedPacketRepository;
-
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import org.yakdanol.nstrafficcaptureservice.util.PacketToJsonConverter;
 
 import java.util.concurrent.*;
@@ -22,9 +21,7 @@ import java.util.concurrent.*;
 @Slf4j
 @Service
 public class TrafficCaptureService {
-    @Value("${traffic-capture.processing-pool-size}")
-    private int processingPoolSize;
-
+    private final TrafficCaptureConfig config;
     private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
     private final PcapHandle handle;
     private final CapturedPacketRepository repository;
@@ -36,22 +33,21 @@ public class TrafficCaptureService {
     private final ExecutorService processingExecutor;
 
     @Autowired
-    public TrafficCaptureService(PcapNetworkInterface networkInterface,
+    public TrafficCaptureService(TrafficCaptureConfig config,
+                                 PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
                                  PacketToJsonConverter converter,
                                  FileRotationService fileRotationService,
-                                 MeterRegistry meterRegistry,
-                                 @Value("${traffic-capture.processing-pool-size}") int processingPoolSize,
-                                 @Value("${traffic-capture.queue-size}") int queueSize,
-                                 @Value("${traffic-capture.filter}") String filter) throws PcapNativeException, NotOpenException {
+                                 MeterRegistry meterRegistry) throws PcapNativeException, NotOpenException {
+        this.config = config;
         this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
-//        this.handle.setFilter(filter, BpfProgram.BpfCompileMode.OPTIMIZE);
+//        this.handle.setFilter(trafficCaptureConfig.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
         this.repository = repository;
         this.converter = converter;
         this.fileRotationService = fileRotationService;
         this.metrics = new TrafficCaptureMetrics(meterRegistry);
-        this.processingExecutor = Executors.newFixedThreadPool(processingPoolSize);
-        this.packetQueue = new LinkedBlockingQueue<>(queueSize);
+        this.processingExecutor = Executors.newFixedThreadPool(config.getProcessingPoolSize());
+        this.packetQueue = new LinkedBlockingQueue<>(config.getQueueSize());
     }
 
     @PostConstruct
@@ -69,7 +65,7 @@ public class TrafficCaptureService {
         });
 
         // Запуск задач обработки пакетов
-        for (int i = 0; i < processingPoolSize; i++) {
+        for (int i = 0; i < config.getProcessingPoolSize(); i++) {
             processingExecutor.submit(this::consumePackets);
         }
 
