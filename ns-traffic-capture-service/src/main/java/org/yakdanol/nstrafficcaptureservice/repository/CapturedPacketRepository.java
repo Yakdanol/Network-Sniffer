@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.pcap4j.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
 import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
+import org.yakdanol.nstrafficcaptureservice.util.PacketToJsonConverter;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -21,13 +23,17 @@ import java.time.LocalDate;
 public class CapturedPacketRepository {
 
     private final TrafficCaptureConfig config;
+    private final PacketToJsonConverter converter;
     private static final Logger logger = LoggerFactory.getLogger(CapturedPacketRepository.class);
     private BufferedWriter bufferedWriter;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String logFormat;
 
     @Autowired
-    public CapturedPacketRepository(TrafficCaptureConfig config) {
+    public CapturedPacketRepository(TrafficCaptureConfig config, PacketToJsonConverter converter) {
         this.config = config;
+        this.logFormat = config.getLogFormat();
+        this.converter = converter;
     }
 
     @PostConstruct
@@ -41,13 +47,14 @@ public class CapturedPacketRepository {
         logger.info("Opened log file: {}", fileName);
     }
 
-    public synchronized void save(CapturedPacket packet) {
+    public synchronized void save(Packet packet) {
+        CapturedPacket capturedPacket = converter.convert(packet);
         try {
-            String logEntry = switch (config.getLogFormat().toLowerCase()) {
-                case "text" -> packet.toString();
-                case "xml" -> convertToXml(packet);
-                case "csv" -> convertToCsv(packet);
-                default -> objectMapper.writeValueAsString(packet);
+            String logEntry = switch (logFormat) {
+                case "text" -> capturedPacket.toString();
+                case "xml" -> convertToXml(capturedPacket);
+                case "csv" -> convertToCsv(capturedPacket);
+                default -> objectMapper.writeValueAsString(capturedPacket);
             };
             bufferedWriter.write(logEntry);
             bufferedWriter.newLine();
@@ -80,7 +87,6 @@ public class CapturedPacketRepository {
 
     private String convertToXml(CapturedPacket packet) {
         // Реализация преобразования объекта в XML с использованием JAXB
-        // Для упрощения, возвращаем строковое представление
         StringBuilder xmlBuilder = new StringBuilder(2048)
                 .append("<CapturedPacket>")
                 .append("<timestamp>").append(packet.getTimestamp()).append("</timestamp>")

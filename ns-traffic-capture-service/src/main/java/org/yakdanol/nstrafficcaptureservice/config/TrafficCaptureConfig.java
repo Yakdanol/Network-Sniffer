@@ -11,17 +11,13 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "traffic-capture")
 public class TrafficCaptureConfig {
 
+    private String user;
+    private String system;
     private String interfaceName;
-
     private String logDirectory;
-
     private String logFormat;
-
     private String filter;
-
     private int processingPoolSize;
-
     private int queueSize;
-
     private boolean consoleLogging;
 }

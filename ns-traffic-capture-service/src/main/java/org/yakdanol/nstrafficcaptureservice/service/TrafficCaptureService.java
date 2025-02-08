@@ -12,9 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
 import org.yakdanol.nstrafficcaptureservice.metrics.TrafficCaptureMetrics;
-import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
 import org.yakdanol.nstrafficcaptureservice.repository.CapturedPacketRepository;
-import org.yakdanol.nstrafficcaptureservice.util.PacketToJsonConverter;
 
 import java.util.concurrent.*;
 
@@ -26,7 +24,6 @@ public class TrafficCaptureService {
     private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
     private final PcapHandle handle;
     private final CapturedPacketRepository repository;
-    private final PacketToJsonConverter converter;
     private final FileRotationService fileRotationService;
     private final TrafficCaptureMetrics metrics;
     private final BlockingQueue<Packet> packetQueue;
@@ -37,14 +34,12 @@ public class TrafficCaptureService {
     public TrafficCaptureService(TrafficCaptureConfig config,
                                  PcapNetworkInterface networkInterface,
                                  CapturedPacketRepository repository,
-                                 PacketToJsonConverter converter,
                                  FileRotationService fileRotationService,
                                  MeterRegistry meterRegistry) throws PcapNativeException, NotOpenException {
         this.config = config;
         this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
-//        this.handle.setFilter(trafficCaptureConfig.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
+        this.handle.setFilter(config.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
         this.repository = repository;
-        this.converter = converter;
         this.fileRotationService = fileRotationService;
         this.metrics = new TrafficCaptureMetrics(meterRegistry);
         this.processingExecutor = Executors.newFixedThreadPool(config.getProcessingPoolSize());
@@ -88,8 +83,7 @@ public class TrafficCaptureService {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 Packet packet = packetQueue.take();
-                CapturedPacket capturedPacket = converter.convert(packet);
-                repository.save(capturedPacket);
+                repository.save(packet);
             } catch (InterruptedException e) {
                 logger.warn("Packet processing thread interrupted", e);
                 Thread.currentThread().interrupt();
