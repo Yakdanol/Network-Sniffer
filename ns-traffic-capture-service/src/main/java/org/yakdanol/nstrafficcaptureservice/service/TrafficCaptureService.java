@@ -3,50 +3,119 @@ package org.yakdanol.nstrafficcaptureservice.service;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.pcap4j.core.*;
 import org.pcap4j.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
 import org.yakdanol.nstrafficcaptureservice.metrics.TrafficCaptureMetrics;
-import org.yakdanol.nstrafficcaptureservice.repository.CapturedPacketRepository;
 
 import java.util.concurrent.*;
 
-@Slf4j
 @Service
+@RequiredArgsConstructor
 public class TrafficCaptureService {
 
-    private final TrafficCaptureConfig config;
     private static final Logger logger = LoggerFactory.getLogger(TrafficCaptureService.class);
-    private final PcapHandle handle;
-    private final CapturedPacketRepository repository;
-    private final FileRotationService fileRotationService;
+
+    private final TrafficCaptureConfig config;
     private final TrafficCaptureMetrics metrics;
-    private final BlockingQueue<Packet> packetQueue;
-    private final ExecutorService captureExecutor = Executors.newSingleThreadExecutor();
+    private final KafkaPacketSender kafkaSender;
+    private final LocalFilePacketSender localFileSender;
+
+    private volatile PacketSender activeSender; // текущая реализация отправки (Kafka / Local)
+    private boolean doubleWrite;
+
+    private final ExecutorService captureExecutor;
     private final ExecutorService processingExecutor;
+    private final BlockingQueue<Packet> packetQueue;
+    private final PcapHandle handle;
+    private final FileRotationService fileRotationService;
 
     @Autowired
     public TrafficCaptureService(TrafficCaptureConfig config,
                                  PcapNetworkInterface networkInterface,
-                                 CapturedPacketRepository repository,
                                  FileRotationService fileRotationService,
-                                 MeterRegistry meterRegistry) throws PcapNativeException, NotOpenException {
+                                 MeterRegistry meterRegistry,
+                                 @Qualifier("kafkaPacketSender") KafkaPacketSender kafkaSender,
+                                 @Qualifier("localFilePacketSender") LocalFilePacketSender localFileSender) throws PcapNativeException, NotOpenException {
         this.config = config;
-        this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
-        this.handle.setFilter(config.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
-        this.repository = repository;
         this.fileRotationService = fileRotationService;
         this.metrics = new TrafficCaptureMetrics(meterRegistry);
+
+        this.kafkaSender = kafkaSender;
+        this.localFileSender = localFileSender;
+
+        this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
+        this.handle.setFilter(config.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
+
+        this.captureExecutor = Executors.newFixedThreadPool(config.getCapturingPoolSize());
         this.processingExecutor = Executors.newFixedThreadPool(config.getProcessingPoolSize());
         this.packetQueue = new LinkedBlockingQueue<>(config.getQueueSize());
+
+        logger.info("TrafficCaptureService constructor: pcap handle opened, filter={}, mode={}",
+                config.getFilter(), config.getMode());
     }
 
     @PostConstruct
+    public void init() {
+        // Определяем тип работы сервиса (Local / Remote)
+        String mode = config.getMode();
+        logger.info("TrafficCaptureService starting in mode: {}", mode);
+
+        switch (mode.toLowerCase()) {
+            case "remote" -> {
+                boolean ok = kafkaSender.checkAvailable();
+                if (ok) {
+                    activeSender = kafkaSender;
+                    doubleWrite = false;
+                    logger.info("Kafka is available. Using remote mode only (Kafka).");
+                } else {
+                    // переключаемся в local
+                    activeSender = localFileSender;
+                    doubleWrite = false;
+                    logger.warn("Kafka is NOT available. Fallback to local mode.");
+                }
+            }
+            case "both" -> {
+                boolean ok = kafkaSender.checkAvailable();
+                if (ok) {
+                    // Если Kafka доступна, используем double-write
+                    activeSender = kafkaSender;
+                    doubleWrite = true;
+                    logger.info("Kafka is available. Using double-write (both) mode.");
+                } else {
+                    // переключаемся в local
+                    activeSender = localFileSender;
+                    doubleWrite = false;
+                    logger.warn("Kafka is NOT available. Fallback to local mode (no double-write).");
+                }
+            }
+            case "local" -> {
+                activeSender = localFileSender;
+                doubleWrite = false;
+                logger.info("Local mode enabled. Will only write to local files.");
+            }
+            default -> {
+                logger.error("Unknown traffic-capture.mode: {}. Fallback to local.", mode);
+                activeSender = localFileSender;
+                doubleWrite = false;
+            }
+        }
+
+        try {
+            startCapture();
+        } catch (Exception e) {
+            logger.error("Failed to init PCAP handle: {}", e.getMessage(), e);
+            // Если не удалось открыть сетевой интерфейс - fallback не спасёт, просто завершаем
+            shutdownExecutors();
+        }
+    }
+
     public void startCapture() {
         captureExecutor.submit(() -> {
             try {
@@ -83,7 +152,7 @@ public class TrafficCaptureService {
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 Packet packet = packetQueue.take();
-                repository.save(packet);
+                sendPacketWithFallback(packet);
             } catch (InterruptedException e) {
                 logger.warn("Packet processing thread interrupted", e);
                 Thread.currentThread().interrupt();
@@ -94,27 +163,70 @@ public class TrafficCaptureService {
         }
     }
 
+    private void sendPacketWithFallback(Packet packet) {
+        if (doubleWrite) {
+            try {
+                kafkaSender.sendPacket(packet);
+            } catch (Exception ex) {
+                logger.error("Kafka send failed in 'both' mode. Fallback partial: we still have local file. Error={}", ex.getMessage());
+                doubleWrite = false;
+                activeSender = localFileSender;
+                kafkaSender.closeProducer(); // Закрываем Producer Kafka
+                localFileSender.sendPacket(packet);
+                return;
+            }
+            // Если Kafka ок, то параллельно пишем в локальный файл
+            localFileSender.sendPacket(packet);
+        } else {
+            if (activeSender == kafkaSender) {
+                try {
+                    kafkaSender.sendPacket(packet);
+                } catch (Exception ex) {
+                    logger.error("Critical error sending to Kafka. Fallback to local mode. Err={}", ex.getMessage());
+                    activeSender = localFileSender;
+                    kafkaSender.closeProducer();
+                    localFileSender.sendPacket(packet);
+                }
+            } else {
+                localFileSender.sendPacket(packet);
+            }
+        }
+    }
+
     @PreDestroy
-    public void stopCapture() {
+    public void shutdown() {
+        logger.info("Shutting down TrafficCaptureService gracefully...");
         try {
-            handle.breakLoop();
-            handle.close();
+            if (handle != null && handle.isOpen()) {
+                handle.breakLoop();
+                handle.close();
+                logger.info("Pcap handle closed.");
+            }
         } catch (NotOpenException e) {
             logger.error("Error closing pcap handle", e);
         }
-        captureExecutor.shutdownNow();
-        processingExecutor.shutdownNow();
+        shutdownExecutors();
+    }
+
+    private void shutdownExecutors() {
+        captureExecutor.shutdown();
+        processingExecutor.shutdown();
+
         try {
             if (!captureExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                logger.warn("CaptureExecutor did not terminate in the specified time.");
+                logger.warn("captureExecutor did not terminate in time => forcing shutdownNow()");
+                captureExecutor.shutdownNow();
             }
-            if (!processingExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
-                logger.warn("ProcessingExecutor did not terminate in the specified time.");
+
+            if (!processingExecutor.awaitTermination(6, TimeUnit.SECONDS)) {
+                logger.warn("processingExecutor did not terminate in time => forcing shutdownNow()");
+                processingExecutor.shutdownNow();
             }
+
         } catch (InterruptedException e) {
-            logger.error("Interrupted during shutdown", e);
             Thread.currentThread().interrupt();
         }
-        fileRotationService.stop();
+
+        logger.info("TrafficCaptureService shutdown complete.");
     }
 }
