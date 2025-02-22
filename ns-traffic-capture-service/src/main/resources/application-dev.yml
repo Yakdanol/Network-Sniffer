@@ -16,11 +16,13 @@ traffic-capture:
   kafka:
     bootstrapServers: "localhost:9092"
     topicName: "traffic.capture"
-    retries: 3             # Retry при ошибках и сбоях
     lingerMs: 100          # Время ожидания (в миллисекундах) перед отправкой batch сообщений
     batchSize: 8192        # Максимальный размер (в байтах) batch сообщений (16384)
     compressionType: "snappy"  # Алгоритм сжатия данных (gzip / snappy / lz4 / zstd)
-    health-check-timeout-ms: 3000 # Время на health-check проверку
+    retries: 3             # Retry при ошибках и сбоях
+    retryDelay: 500        # Пауза между retry (мс)
+    callbackTimeout: 1     # Таймаут ожидания ответа от Kafka (сек_
+    health-check-timeout: 3000 # Время на health-check проверку (мс)
 
 logging:
   level:

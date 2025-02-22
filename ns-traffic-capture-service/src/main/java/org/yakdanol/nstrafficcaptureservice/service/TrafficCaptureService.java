@@ -69,8 +69,7 @@ public class TrafficCaptureService {
 
         switch (mode.toLowerCase()) {
             case "remote" -> {
-                boolean ok = kafkaSender.checkAvailable();
-                if (ok) {
+                if (kafkaSender.checkAvailable()) {
                     activeSender = kafkaSender;
                     doubleWrite = false;
                     logger.info("Kafka is available. Using remote mode only (Kafka).");
@@ -82,8 +81,7 @@ public class TrafficCaptureService {
                 }
             }
             case "both" -> {
-                boolean ok = kafkaSender.checkAvailable();
-                if (ok) {
+                if (kafkaSender.checkAvailable()) {
                     // Если Kafka доступна, используем double-write
                     activeSender = kafkaSender;
                     doubleWrite = true;
@@ -171,8 +169,8 @@ public class TrafficCaptureService {
                 logger.error("Kafka send failed in 'both' mode. Fallback partial: we still have local file. Error={}", ex.getMessage());
                 doubleWrite = false;
                 activeSender = localFileSender;
-                kafkaSender.closeProducer(); // Закрываем Producer Kafka
                 localFileSender.sendPacket(packet);
+                kafkaSender.closeProducer(); // Закрываем Producer Kafka
                 return;
             }
             // Если Kafka ок, то параллельно пишем в локальный файл
@@ -184,8 +182,8 @@ public class TrafficCaptureService {
                 } catch (Exception ex) {
                     logger.error("Critical error sending to Kafka. Fallback to local mode. Err={}", ex.getMessage());
                     activeSender = localFileSender;
-                    kafkaSender.closeProducer();
                     localFileSender.sendPacket(packet);
+                    kafkaSender.closeProducer();
                 }
             } else {
                 localFileSender.sendPacket(packet);

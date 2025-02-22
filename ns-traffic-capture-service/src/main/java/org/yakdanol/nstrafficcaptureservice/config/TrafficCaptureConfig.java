@@ -32,10 +32,13 @@ public class TrafficCaptureConfig {
     public static class KafkaProperties {
         private String bootstrapServers;
         private String topicName;
-        private int retries;
         private int lingerMs;
         private int batchSize;
         private String compressionType;
-        private int healthCheckTimeoutMs;
+
+        private int retries;
+        private int retryDelay;
+        private int callbackTimeout;
+        private int healthCheckTimeout;
     }
 }
