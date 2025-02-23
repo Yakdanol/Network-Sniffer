@@ -216,7 +216,7 @@ public class TrafficCaptureService {
                 captureExecutor.shutdownNow();
             }
 
-            if (!processingExecutor.awaitTermination(6, TimeUnit.SECONDS)) {
+            if (!processingExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 logger.warn("processingExecutor did not terminate in time => forcing shutdownNow()");
                 processingExecutor.shutdownNow();
             }

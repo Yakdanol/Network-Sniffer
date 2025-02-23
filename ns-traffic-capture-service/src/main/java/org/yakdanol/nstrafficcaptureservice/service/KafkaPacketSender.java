@@ -141,7 +141,7 @@ public class KafkaPacketSender implements PacketSender {
                     if (ex == null) {
                         // успех
                         successFlag.set(true);
-                        logger.debug("Kafka send SUCCESS => offset={}", result.getRecordMetadata().offset());
+                        logger.trace("Kafka send SUCCESS => offset={}", result.getRecordMetadata().offset());
                     } else {
                         // ошибка
                         lastEx.set(new Exception(ex));
