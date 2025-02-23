@@ -1,0 +1,47 @@
+server:
+  port: 8081
+
+traffic-capture:
+  user: "WN-0001" # Уникальное имя пользователя
+  system: "Windows 10" # Система пользователя
+  mode: "remote" # Режим работы (local / remote / both)
+  interface-name: "RZ616 Wi-Fi 6E 160MHz" # Имя сетевого интерфейса для захвата трафика
+  log-directory: "ns-traffic-capture-service\\logs" # Директория для сохранения лог-файлов микросервиса
+  log-format: "json" # Формат логирования: json, xml, csv, text
+  filter: "" # BPF фильтр (pcap-filter(7)) для захвата пакетов # example: "host 192.168.1.8" / "(src host <*>) or (dst host <*>)"
+  capturing-pool-size: 1 # Количество потоков для захвата пакетов
+  processing-pool-size: 2 # Количество потоков для обработки пакетов
+  queue-size: 100 # Размер очереди для буферизации пакетов
+  console-logging: true # Логирование данных в консоль
+  kafka:
+    bootstrapServers: "localhost:9092"
+    topicName: "traffic.capture"
+    lingerMs: 100          # Время ожидания (в миллисекундах) перед отправкой batch сообщений
+    batchSize: 8192        # Максимальный размер (в байтах) batch сообщений (16384)
+    compressionType: "snappy"  # Алгоритм сжатия данных (gzip / snappy / lz4 / zstd)
+    retries: 3             # Retry при ошибках и сбоях
+    retryDelay: 500        # Пауза между retry (мс)
+    callbackTimeout: 1     # Таймаут ожидания ответа от Kafka (сек_
+    health-check-timeout: 3000 # Время на health-check проверку (мс)
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: traffic-capture.log
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "*"
+    endpoint:
+      health:
+        show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
