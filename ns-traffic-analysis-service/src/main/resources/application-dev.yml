@@ -1,0 +1,16 @@
+server:
+  port: 8082
+
+traffic-analysis:
+  processing-mode: "parallel"   # sequential / parallel
+  pool-size: 6
+  batch-size: 10
+  report-format: "pdf"
+  file:
+    incoming-format: "text"
+    directory: "/data/analysis"
+  kafka:
+    topic-name: "traffic.capture"
+    bootstrap-servers: "localhost:9092"
+    group-id: "analysis-service"
+

@@ -50,7 +50,7 @@ public class TrafficCaptureService {
         this.kafkaSender = kafkaSender;
         this.localFileSender = localFileSender;
 
-        this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.PROMISCUOUS, 10);
+        this.handle = networkInterface.openLive(65536, PcapNetworkInterface.PromiscuousMode.NONPROMISCUOUS, 10);
         this.handle.setFilter(config.getFilter(), BpfProgram.BpfCompileMode.OPTIMIZE);
 
         this.captureExecutor = Executors.newFixedThreadPool(config.getCapturingPoolSize());
