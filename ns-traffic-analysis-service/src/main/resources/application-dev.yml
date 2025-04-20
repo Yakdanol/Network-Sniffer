@@ -2,15 +2,23 @@ server:
   port: 8082
 
 traffic-analysis:
-  processing-mode: "parallel"   # sequential / parallel
-  pool-size: 6
-  batch-size: 10
-  report-format: "pdf"
+  processing-mode: "parallel"   # Режим работы: "sequential" or "parallel"
+  pool-size: 6                  # Кол-во потоков многопоточной работы
+  batch-size: 10                # Максимальное кол-во полученных за раз данных
+  report-format: "pdf"          # Формат отчёта ("xlsx", "pdf")
   file:
-    incoming-format: "text"
-    directory: "/data/analysis"
+    incoming-format: "text"         # Формат данных входных файлов (pcap/json/xml/csv/text)
+    directory: "/data/analysis"     # Директория размещения файлов (default "/data/analysis")
   kafka:
-    topic-name: "traffic.capture"
     bootstrap-servers: "localhost:9092"
+    topic-name: "traffic.capture.WN-0001"
     group-id: "analysis-service"
-
+    offset-reset: "earliest"
+    auto-commit: "false"
+    session-timeout-ms: 30000      # Время ответа на heartbeat пакет
+    heartbeat-interval-ms: 10000   # Интервал между отправками heartbeat сообщений
+    linger-ms: 100                 # Время ожидания (в миллисекундах) перед отправкой batch сообщений
+    batch-size: 8192               # Максимальный размер (в байтах) batch сообщений
+    retries: 3                     # Кол-во повторных попыток запросов к Kafka при ошибках и сбоях
+    retry-delay-ms: 1000           # Пауза между retry (мс)
+    callback-timeout-s: 1          # Таймаут ожидания ответа от Kafka (сек)

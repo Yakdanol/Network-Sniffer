@@ -31,10 +31,7 @@ public class PacketSenderConfig {
             + "or '${traffic-capture.mode}'.equalsIgnoreCase('both')}")
     public KafkaPacketSender kafkaPacketSender(
             @Qualifier("producerConfigs") Map<String, Object> producerConfigs,
-            TrafficCaptureConfig config,
-            PacketToJsonConverter converter
-    ) {
-        return new KafkaPacketSender(producerConfigs, config, converter);
+            TrafficCaptureConfig config) {
+        return new KafkaPacketSender(producerConfigs, config);
     }
 }
-

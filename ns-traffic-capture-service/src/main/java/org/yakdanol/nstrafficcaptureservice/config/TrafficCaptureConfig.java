@@ -25,11 +25,11 @@ public class TrafficCaptureConfig {
     private boolean consoleLogging;
 
     // Настройки Kafka
-    private KafkaProperties kafka = new KafkaProperties();
+    private KafkaConfigs kafka = new KafkaConfigs();
 
     @Getter
     @Setter
-    public static class KafkaProperties {
+    public static class KafkaConfigs {
         private String bootstrapServers;
         private String topicName;
         private int lingerMs;

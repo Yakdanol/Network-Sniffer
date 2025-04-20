@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class TrafficAnalysisConfig {
     // Общие поля
-    private String processingMode; // Режим работы: "sequential" or "parallel"
-    private String reportFormat; // Формат: отчета "xlsx", "pdf"
-    private int poolSize;   // Runtime.getRuntime().availableProcessors() - 2
+    private String processingMode;
+    private int poolSize;
     private int batchSize;
+    private String reportFormat;
 
     // Параметры для работы с файлами
     private FileConfig file = new FileConfig();
@@ -24,15 +24,25 @@ public class TrafficAnalysisConfig {
     @Getter
     @Setter
     public static class FileConfig {
-        private String incomingFormat;  // json/xml/csv/text
-        private String directory;       // "/data/analysis"
+        private String incomingFormat;
+        private String directory;
     }
 
     @Getter
     @Setter
     public static class KafkaConfig {
-        private String topicName;
         private String bootstrapServers;
+        private String topicName;
         private String groupId;
+        private String offsetReset;
+        private String autoCommit;
+
+        private String sessionTimeoutMs;
+        private String heartbeatIntervalMs;
+        private int lingerMs;
+        private int batchSize;
+        private int retries;
+        private int retryDelayMs;
+        private int callbackTimeoutS;
     }
 }

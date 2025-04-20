@@ -1,8 +1,6 @@
 package org.yakdanol.nstrafficcaptureservice.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.pcap4j.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,22 +11,23 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
-import org.yakdanol.nstrafficcaptureservice.model.CapturedPacket;
-import org.yakdanol.nstrafficcaptureservice.util.PacketToJsonConverter;
 
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Класс отправки пакетов в Kafka.
  * 1) При старте (конструктор) пробуем создать producer c короткими таймаутами,
- *    один раз проверяем partitionsFor.
+ * один раз проверяем partitionsFor.
  * 2) Запускаем отдельный поток (kafkaMonitorThread), который каждые N секунд
- *    проверяет доступность Kafka. Если недоступно X раз подряд -> closeProducer().
+ * проверяет доступность Kafka. Если недоступно X раз подряд -> closeProducer().
  * 3) Если producer=null или kafkaAvailable=false, при вызове sendPacket бросается исключение,
- *    что приведёт к fallback в TrafficCaptureService.
+ * что приведёт к fallback в TrafficCaptureService.
  */
 @Service("kafkaPacketSender")
 public class KafkaPacketSender implements PacketSender {
@@ -36,11 +35,9 @@ public class KafkaPacketSender implements PacketSender {
     private static final Logger logger = LoggerFactory.getLogger(KafkaPacketSender.class);
 
     private final TrafficCaptureConfig config;
-    private final ObjectMapper objectMapper;
-    private final PacketToJsonConverter converter;
     private final String topicName;
 
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, byte[]> kafkaTemplate;
 
     private volatile boolean kafkaAvailable; // Флаг, показывающий, успешно ли инициализировали Kafka
     private final int maxRetries; // макс кол-во попыток retry
@@ -49,17 +46,14 @@ public class KafkaPacketSender implements PacketSender {
 
     @Autowired
     public KafkaPacketSender(@Qualifier("producerConfigs") Map<String, Object> producerConfigs,
-                             TrafficCaptureConfig config,
-                             PacketToJsonConverter converter) {
+                             TrafficCaptureConfig config) {
         this.config = config;
-        this.converter = converter;
-        this.objectMapper = new ObjectMapper();
         this.topicName = config.getKafka().getTopicName() + "." + config.getUser();
         this.kafkaAvailable = false;
 
-        maxRetries = config.getKafka().getRetries();
-        retryDelay = config.getKafka().getRetryDelay();
-        callbackTimeout = config.getKafka().getCallbackTimeout();
+        this.maxRetries = config.getKafka().getRetries();
+        this.retryDelay = config.getKafka().getRetryDelay();
+        this.callbackTimeout = config.getKafka().getCallbackTimeout();
 
         // Если режим local => не создаём реальный KafkaProducer
         String mode = config.getMode();
@@ -75,7 +69,7 @@ public class KafkaPacketSender implements PacketSender {
 
                 logger.info("KafkaPacketSender: Trying to create KafkaProducer for mode={}", mode);
 
-                ProducerFactory<String, String> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs);
+                ProducerFactory<String, byte[]> producerFactory = new DefaultKafkaProducerFactory<>(producerConfigs);
                 this.kafkaTemplate = new KafkaTemplate<>(producerFactory);
 
                 // Успешно создали, проверяем доступность
@@ -101,7 +95,7 @@ public class KafkaPacketSender implements PacketSender {
 
         try {
             // создаём одноразовый producer
-            ProducerFactory<String, String> pf = kafkaTemplate.getProducerFactory();
+            ProducerFactory<String, byte[]> pf = kafkaTemplate.getProducerFactory();
             try (var ephemeralProducer = pf.createProducer()) {
                 ephemeralProducer.partitionsFor(topicName);
             }
@@ -118,25 +112,24 @@ public class KafkaPacketSender implements PacketSender {
      * При multiple retry > throw Exception => fallback.
      */
     @Override
-    public void sendPacket(org.pcap4j.packet.Packet rawPacket) throws Exception {
+    public void sendPacket(org.pcap4j.packet.Packet packet) throws Exception {
         if (kafkaTemplate == null || !kafkaAvailable) {
             throw new IllegalStateException("Kafka not available => fallback");
         }
-        // Преобразуем пакет
-        CapturedPacket cp = converter.convert(rawPacket);
-        String message = objectMapper.writeValueAsString(cp);
+        // Преобразуем пакет в массив байт
+        byte[] rawData = packet.getRawData();
 
-        int attempt = 0;
+        int countaAttempt = 0;
         AtomicReference<Exception> lastEx = new AtomicReference<>();
 
-        while (attempt < maxRetries) {
-            attempt++;
+        while (countaAttempt < maxRetries) {
+            countaAttempt++;
             final CountDownLatch latch = new CountDownLatch(1);
             final AtomicBoolean successFlag = new AtomicBoolean(false);
 
-            CompletableFuture<SendResult<String, String>> future = kafkaTemplate.send(topicName, message);
+            CompletableFuture<SendResult<String, byte[]>> future = kafkaTemplate.send(topicName, rawData);
 
-            int finalAttempt = attempt;
+            int finalAttempt = countaAttempt;
             future.whenComplete((result, ex) -> {
                 try {
                     if (ex == null) {
@@ -144,7 +137,7 @@ public class KafkaPacketSender implements PacketSender {
                         successFlag.set(true);
                         logger.trace("Kafka send SUCCESS => offset={}", result.getRecordMetadata().offset());
                     } else {
-                        // ошибка
+                        // ловим ошибку
                         lastEx.set(new Exception(ex));
                         logger.error("Kafka send attempt={} => error: {}", finalAttempt, ex.getMessage());
                     }
@@ -158,7 +151,7 @@ public class KafkaPacketSender implements PacketSender {
             if (!done) {
                 // callback не пришёл => считаем ошибкой
                 lastEx.set(new TimeoutException("No callback from Kafka within " + callbackTimeout + "s"));
-                logger.warn("Kafka send attempt={} => no callback => treat as fail", attempt);
+                logger.warn("Kafka send attempt={} => no callback => treat as fail", countaAttempt);
             }
 
             if (successFlag.get()) {
