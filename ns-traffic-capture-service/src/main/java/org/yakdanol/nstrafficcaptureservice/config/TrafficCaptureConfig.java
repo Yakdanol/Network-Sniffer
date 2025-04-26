@@ -25,20 +25,22 @@ public class TrafficCaptureConfig {
     private boolean consoleLogging;
 
     // Настройки Kafka
-    private KafkaProperties kafka = new KafkaProperties();
+    private KafkaProducerConfigs kafka = new KafkaProducerConfigs();
 
     @Getter
     @Setter
-    public static class KafkaProperties {
+    public static class KafkaProducerConfigs {
         private String bootstrapServers;
         private String topicName;
         private int lingerMs;
         private int batchSize;
         private String compressionType;
 
+        private int requestTimeoutMs;
+        private int maxBlock;
         private int retries;
-        private int retryDelay;
-        private int callbackTimeout;
-        private int healthCheckTimeout;
+        private int retryDelayMs;
+        private int callbackTimeoutS;
+        private int healthCheckTimeoutMs;
     }
 }
