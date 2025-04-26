@@ -25,7 +25,6 @@ import java.util.Map;
 public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, DisposableBean {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPacketConsumer.class);
     TrafficAnalysisConfig trafficAnalysisConfigs;
-    Map<String, Object> kafkaConsumerConfigs;
     private final Consumer<String, byte[]> consumer;
     private volatile boolean initialized = false; // Флаг, показывающий, успешно ли инициализировали Kafka
 
@@ -33,13 +32,12 @@ public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, Di
     public KafkaPacketConsumer(@Qualifier("consumerConfigs") Map<String, Object> consumerConfigs,
                                TrafficAnalysisConfig trafficAnalysisConfigs) {
         this.trafficAnalysisConfigs = trafficAnalysisConfigs;
-        this.kafkaConsumerConfigs = consumerConfigs;
         this.consumer = new KafkaConsumer<>(consumerConfigs);
     }
 
     @Override
     public void afterPropertiesSet() {
-        String topic = trafficAnalysisConfigs.getKafka().getTopicName();
+        String topic = trafficAnalysisConfigs.getKafkaConsumerConfigs().getTopicName();
         consumer.subscribe(Collections.singletonList(topic));
         initialized = true;
         logger.info("KafkaPacketConsumer: subscribed to topic \"{}\"", topic);
@@ -52,9 +50,9 @@ public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, Di
             throw new IllegalStateException("KafkaPacketConsumer is not initialized");
         }
 
-        int maxRetries = trafficAnalysisConfigs.getKafka().getRetries();
-        long retryDelay = trafficAnalysisConfigs.getKafka().getRetryDelayMs();
-        Duration pollTimeout = Duration.ofSeconds(trafficAnalysisConfigs.getKafka().getCallbackTimeoutS());
+        int maxRetries = trafficAnalysisConfigs.getKafkaConsumerConfigs().getRetries();
+        long retryDelay = trafficAnalysisConfigs.getKafkaConsumerConfigs().getRetryDelayMs();
+        Duration pollTimeout = Duration.ofSeconds(trafficAnalysisConfigs.getKafkaConsumerConfigs().getCallbackTimeoutS());
 
         for (int attempt = 1; ; attempt++) {
             try {

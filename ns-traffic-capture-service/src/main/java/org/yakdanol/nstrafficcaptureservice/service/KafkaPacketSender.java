@@ -1,6 +1,5 @@
 package org.yakdanol.nstrafficcaptureservice.service;
 
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,8 +51,8 @@ public class KafkaPacketSender implements PacketSender {
         this.kafkaAvailable = false;
 
         this.maxRetries = config.getKafka().getRetries();
-        this.retryDelay = config.getKafka().getRetryDelay();
-        this.callbackTimeout = config.getKafka().getCallbackTimeout();
+        this.retryDelay = config.getKafka().getRetryDelayMs();
+        this.callbackTimeout = config.getKafka().getCallbackTimeoutS();
 
         // Если режим local => не создаём реальный KafkaProducer
         String mode = config.getMode();
@@ -64,8 +63,7 @@ public class KafkaPacketSender implements PacketSender {
         } else {
             try {
                 // Принудительно прописываем параметры, чтобы не блокироваться навсегда
-                producerConfigs.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 1000);
-                producerConfigs.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 1000);
+
 
                 logger.info("KafkaPacketSender: Trying to create KafkaProducer for mode={}", mode);
 

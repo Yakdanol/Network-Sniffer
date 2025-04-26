@@ -17,7 +17,7 @@ public class KafkaConsumerConfig {
 
     @Bean
     public Map<String, Object> consumerConfigs() {
-        TrafficAnalysisConfig.KafkaConfig kafkaConfigs = trafficAnalysisConfig.getKafka();
+        TrafficAnalysisConfig.KafkaConsumerConfigs kafkaConfigs = trafficAnalysisConfig.getKafkaConsumerConfigs();
 
         Map<String, Object> props = new HashMap<>();
 

@@ -18,16 +18,19 @@ public class KafkaProducerConfig {
 
     @Bean
     public Map<String, Object> producerConfigs() {
-        TrafficCaptureConfig.KafkaConfigs kafkaConfigs = trafficCaptureConfig.getKafka();
+        TrafficCaptureConfig.KafkaProducerConfigs kafkaProducerConfigs = trafficCaptureConfig.getKafka();
 
         Map<String, Object> props = new HashMap<>();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfigs.getBootstrapServers());
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProducerConfigs.getBootstrapServers());
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class);
-        props.put(ProducerConfig.RETRIES_CONFIG, kafkaConfigs.getRetries());
-        props.put(ProducerConfig.LINGER_MS_CONFIG, kafkaConfigs.getLingerMs());
-        props.put(ProducerConfig.BATCH_SIZE_CONFIG, kafkaConfigs.getBatchSize());
-        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, kafkaConfigs.getCompressionType());
+        props.put(ProducerConfig.RETRIES_CONFIG, kafkaProducerConfigs.getRetries());
+        props.put(ProducerConfig.LINGER_MS_CONFIG, kafkaProducerConfigs.getLingerMs());
+        props.put(ProducerConfig.BATCH_SIZE_CONFIG, kafkaProducerConfigs.getBatchSize());
+        props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, kafkaProducerConfigs.getCompressionType());
+
+        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 1000);
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 1000);
 
         return props;
     }

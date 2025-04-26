@@ -7,22 +7,24 @@ traffic-capture:
   mode: "remote"         # Режим работы (local / remote / both)
   interface-name: "RZ616 Wi-Fi 6E 160MHz"             # Имя сетевого интерфейса для захвата трафика
   log-directory: "ns-traffic-capture-service\\logs"   # Директория для сохранения лог-файлов микросервиса
-  log-format: "json"   # Формат логирования: json, xml, csv, text
+  log-format: "json"     # Формат логирования: json, xml, csv, text
   filter: "tcp and ((src host 192.168.1.6 and dst port 443) or (dst host 192.168.1.6 and src port 443))"           # BPF фильтр (pcap-filter(7)) для захвата пакетов # example: "host 192.168.1.8" / "(src host <*>) or (dst host <*>)"
-  capturing-pool-size: 1 # Количество потоков для захвата пакетов
-  processing-pool-size: 2 # Количество потоков для обработки пакетов
-  queue-size: 100 # Размер очереди для буферизации пакетов
-  console-logging: true # Логирование данных в консоль
+  capturing-pool-size: 1    # Количество потоков для захвата пакетов
+  processing-pool-size: 2   # Количество потоков для обработки пакетов
+  queue-size: 100           # Размер очереди для буферизации пакетов
+  console-logging: true     # Логирование данных в консоль
   kafka:
     bootstrap-servers: "localhost:9092"
     topic-name: "traffic.capture"
-    linger-ms: 100          # Время ожидания (в миллисекундах) перед отправкой batch сообщений
-    batch-size: 8192        # Максимальный размер (в байтах) batch сообщений (16384)
-    compression-type: "snappy"  # Алгоритм сжатия данных (gzip / snappy / lz4 / zstd)
-    retries: 3             # Retry при ошибках и сбоях
-    retry-delay: 500        # Пауза между retry (мс)
-    callback-timeout: 1     # Таймаут ожидания ответа от Kafka (сек_
-    health-check-timeout: 3000 # Время на health-check проверку (мс)
+    linger-ms: 100                  # Время ожидания (в миллисекундах) перед отправкой batch сообщений
+    batch-size: 8192                # Максимальный размер (в байтах) batch сообщений (16384)
+    compression-type: "snappy"      # Алгоритм сжатия данных (gzip / snappy / lz4 / zstd)
+    request-timeout-ms: 1000        #
+    max-block: 1000                 #
+    retries: 3                      # Retry при ошибках и сбоях
+    retry-delay-ms: 500             # Пауза между retry (мс)
+    callback-timeout-s: 1           # Таймаут ожидания ответа от Kafka (сек)
+    health-check-timeout-ms: 3000   # Время на health-check проверку (мс)
 
 logging:
   level:

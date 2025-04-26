@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Getter
 @Setter
 public class TrafficAnalysisConfig {
+
     // Общие поля
     private String processingMode;
     private int poolSize;
@@ -17,9 +18,9 @@ public class TrafficAnalysisConfig {
     private String reportFormat;
 
     // Параметры для работы с файлами
-    private FileConfig file = new FileConfig();
+    private FileConfig fileConfig = new FileConfig();
     // Параметры для работы с Kafka
-    private KafkaConfig kafka = new KafkaConfig();
+    private KafkaConsumerConfigs kafkaConsumerConfigs = new KafkaConsumerConfigs();
 
     @Getter
     @Setter
@@ -30,7 +31,7 @@ public class TrafficAnalysisConfig {
 
     @Getter
     @Setter
-    public static class KafkaConfig {
+    public static class KafkaConsumerConfigs {
         private String bootstrapServers;
         private String topicName;
         private String groupId;

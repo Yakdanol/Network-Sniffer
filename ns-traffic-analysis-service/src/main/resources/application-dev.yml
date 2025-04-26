@@ -6,14 +6,14 @@ traffic-analysis:
   pool-size: 6                  # Кол-во потоков многопоточной работы
   batch-size: 10                # Максимальное кол-во полученных за раз данных
   report-format: "pdf"          # Формат отчёта ("xlsx", "pdf")
-  file:
-    incoming-format: "text"         # Формат данных входных файлов (pcap/json/xml/csv/text)
-    directory: "/data/analysis"     # Директория размещения файлов (default "/data/analysis")
-  kafka:
+  file-config:
+    incoming-format: "text"         # Формат данных файлов для анализа (pcap/json/xml/csv/text)
+    directory: "/data"     # Директория размещения файлов для анализа ("/data/analysis")
+  kafka-consumer-configs:
     bootstrap-servers: "localhost:9092"
     topic-name: "traffic.capture.WN-0001"
     group-id: "analysis-service"
-    offset-reset: "earliest"
+    offset-reset: "latest"
     auto-commit: "false"
     session-timeout-ms: 30000      # Время ответа на heartbeat пакет
     heartbeat-interval-ms: 10000   # Интервал между отправками heartbeat сообщений
@@ -22,3 +22,10 @@ traffic-analysis:
     retries: 3                     # Кол-во повторных попыток запросов к Kafka при ошибках и сбоях
     retry-delay-ms: 1000           # Пауза между retry (мс)
     callback-timeout-s: 1          # Таймаут ожидания ответа от Kafka (сек)
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:trafficdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
