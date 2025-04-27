@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.yakdanol.nstrafficcaptureservice.service.producer.WorkingMode;
+import org.yakdanol.nstrafficcaptureservice.service.producer.local.LogFormat;
 
 @Getter
 @Setter
@@ -14,10 +16,10 @@ public class TrafficCaptureConfig {
     // Общие поля
     private String user;
     private String system;
-    private String mode;
+    private WorkingMode mode;
     private String interfaceName;
     private String logDirectory;
-    private String logFormat;
+    private LogFormat logFormat;
     private String filter;
     private int capturingPoolSize;
     private int processingPoolSize;
