@@ -32,7 +32,10 @@ dependencies {
 	implementation 'org.pcap4j:pcap4j-packetfactory-static:1.8.2'
 
 	// Jackson-databind
-	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.3'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.3'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.18.3'
 
 	// Lombok
 	implementation 'org.projectlombok:lombok:1.18.30'
@@ -42,7 +45,6 @@ dependencies {
 	// Logback
 //	testImplementation 'ch.qos.logback:logback-classic:1.4.14'
 //	implementation 'ch.qos.logback:logback-core:1.4.14'
-//	implementation 'org.codehaus.janino:janino:3.1.6'
 
 	// Prometheus
 	implementation 'io.micrometer:micrometer-registry-prometheus:1.14.1'

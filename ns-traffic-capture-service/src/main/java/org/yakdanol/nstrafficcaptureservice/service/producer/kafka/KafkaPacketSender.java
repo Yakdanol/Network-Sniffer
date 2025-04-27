@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficcaptureservice.service;
+package org.yakdanol.nstrafficcaptureservice.service.producer.kafka;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +10,8 @@ import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficcaptureservice.config.TrafficCaptureConfig;
+import org.yakdanol.nstrafficcaptureservice.service.producer.PacketSender;
+import org.yakdanol.nstrafficcaptureservice.service.producer.WorkingMode;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * один раз проверяем partitionsFor.
  * 2) Запускаем отдельный поток (kafkaMonitorThread), который каждые N секунд
  * проверяет доступность Kafka. Если недоступно X раз подряд -> closeProducer().
- * 3) Если producer=null или kafkaAvailable=false, при вызове sendPacket бросается исключение,
+ * 3) Если producer = null или kafkaAvailable = false, при вызове sendPacket бросается исключение,
  * что приведёт к fallback в TrafficCaptureService.
  */
 @Service("kafkaPacketSender")
@@ -55,8 +57,8 @@ public class KafkaPacketSender implements PacketSender {
         this.callbackTimeout = config.getKafka().getCallbackTimeoutS();
 
         // Если режим local => не создаём реальный KafkaProducer
-        String mode = config.getMode();
-        if ("local".equalsIgnoreCase(mode)) {
+        WorkingMode mode = config.getMode();
+        if (mode == WorkingMode.LOCAL) {
             logger.info("KafkaPacketSender: mode=local => skipping KafkaProducer creation.");
             this.kafkaTemplate = null;
             this.kafkaAvailable = false;
