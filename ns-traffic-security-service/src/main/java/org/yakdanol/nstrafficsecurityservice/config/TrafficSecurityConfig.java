@@ -1,29 +1,40 @@
 package org.yakdanol.nstrafficsecurityservice.config;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.yakdanol.nstrafficsecurityservice.service.DataSource;
 
 @Configuration
 @ConfigurationProperties(prefix = "traffic-security")
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class TrafficSecurityConfig {
 
-    // Общие поля
-    private String processingMode;
-    private int poolSize;
-    private int batchSize;
-    private String reportFormat;
-
+    // Общие параметры работы микросервиса
+    private GeneralConfig generalConfig;
     // Параметры для работы с файлами
-    private FileConfig fileConfig = new FileConfig();
+    private FileConfig fileConfig;
     // Параметры для работы с Kafka
-    private KafkaConsumerConfigs kafkaConsumerConfigs = new KafkaConsumerConfigs();
+    private KafkaConsumerConfigs kafkaConsumerConfigs;
 
     @Getter
     @Setter
+    @RequiredArgsConstructor
+    public static class GeneralConfig {
+        DataSource dataSource;
+        private String processingMode;
+        private int poolSize;
+        private int batchSize;
+        private String reportFormat;
+    }
+
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
     public static class FileConfig {
         private String incomingFormat;
         private String directory;
@@ -31,6 +42,7 @@ public class TrafficSecurityConfig {
 
     @Getter
     @Setter
+    @RequiredArgsConstructor
     public static class KafkaConsumerConfigs {
         private String bootstrapServers;
         private String topicName;

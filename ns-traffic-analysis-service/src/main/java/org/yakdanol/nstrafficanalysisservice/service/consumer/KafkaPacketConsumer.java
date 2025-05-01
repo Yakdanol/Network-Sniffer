@@ -21,10 +21,10 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 
-@Service("kafkaPacketConsumer")
+@Service("analysisKafkaPacketConsumer")
 public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, DisposableBean {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPacketConsumer.class);
-    TrafficAnalysisConfig trafficAnalysisConfigs;
+    private final TrafficAnalysisConfig trafficAnalysisConfigs;
     private final Consumer<String, byte[]> consumer;
     private volatile boolean initialized = false; // Флаг, показывающий, успешно ли инициализировали Kafka
 

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import org.yakdanol.nstrafficanalysisservice.service.DataSource;
 
 @Configuration
 @ConfigurationProperties(prefix = "traffic-analysis")
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class TrafficAnalysisConfig {
 
     // Общие поля
+    DataSource dataSource;
     private String processingMode;
     private int poolSize;
     private int batchSize;

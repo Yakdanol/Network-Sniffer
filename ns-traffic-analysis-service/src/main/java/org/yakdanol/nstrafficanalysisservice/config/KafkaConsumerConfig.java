@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration
+@Configuration("analysisKafkaConsumerConfig")
 @RequiredArgsConstructor
 public class KafkaConsumerConfig {
     private final TrafficAnalysisConfig trafficAnalysisConfig;
