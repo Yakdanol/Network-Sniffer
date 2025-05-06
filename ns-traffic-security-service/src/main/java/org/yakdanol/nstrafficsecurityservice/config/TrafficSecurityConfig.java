@@ -15,11 +15,13 @@ import org.yakdanol.nstrafficsecurityservice.service.DataSource;
 public class TrafficSecurityConfig {
 
     // Общие параметры работы микросервиса
-    private GeneralConfig generalConfig;
+    private GeneralConfig generalConfigs;
     // Параметры для работы с файлами
-    private FileConfig fileConfig;
+    private FileConfig fileConfigs;
     // Параметры для работы с Kafka
     private KafkaConsumerConfigs kafkaConsumerConfigs;
+    // Параметры работы с Redis
+    private RedisConfigs redisConfigs;
 
     @Getter
     @Setter
@@ -28,6 +30,7 @@ public class TrafficSecurityConfig {
         DataSource dataSource;
         private String processingMode;
         private int poolSize;
+        private int queueSize;
         private int batchSize;
         private String reportFormat;
     }
@@ -36,8 +39,8 @@ public class TrafficSecurityConfig {
     @Setter
     @RequiredArgsConstructor
     public static class FileConfig {
-        private String incomingFormat;
         private String directory;
+        private int batchSize;
     }
 
     @Getter
@@ -57,5 +60,12 @@ public class TrafficSecurityConfig {
         private int retries;
         private int retryDelayMs;
         private int callbackTimeoutS;
+    }
+
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
+    public static class RedisConfigs {
+        private String serverUrl;
     }
 }
