@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+# PostgreSQL
   # БД пользователей для анализа трафика
   users-db:
     image: postgres:16
@@ -43,6 +44,22 @@ services:
     volumes:
       - reports-security-db-data:/var/lib/postgresql/data
 
+  # БД пользователей для анализа трафика
+  users-notification-db:
+    image: postgres:16
+    container_name: postgres_notification_usersDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notification_usersDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5435:5432"
+    volumes:
+      - db-notification-users-data:/var/lib/postgresql/data
+
+#Redis
+
   # Redis для analysis‐микросервиса
   redis_analysis:
     image: redis:latest
@@ -67,6 +84,8 @@ services:
 
 volumes:
   db-users-data:
+    driver: local
+  db-notification-users-data:
     driver: local
   reports-security-db-data:
     driver: local

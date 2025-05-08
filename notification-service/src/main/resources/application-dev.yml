@@ -1,0 +1,31 @@
+server:
+  port: 8084
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5435/notification_usersDB
+    username: yakdanol
+    password: yakdanol
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+    consumer:
+      group-id: notification-service-group
+      auto-offset-reset: latest
+      topics:
+        - notification-topic
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      topics:
+        - notification-topic
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: notification-service.log

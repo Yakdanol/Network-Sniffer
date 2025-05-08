@@ -52,7 +52,7 @@ public class TrafficSecurityService {
     /**
      * Запускает анализ и возвращает список угроз — понадобится для PDF‑отчёта.
      */
-    public void analyse(PacketConsumer consumer, String userFullName) {
+    public void analyse(PacketConsumer consumer, String internalUserName) {
 
         List<ThreatManager.DetectedThreat> threats = new ArrayList<>();
         Instant started = clock.instant();
@@ -63,14 +63,14 @@ public class TrafficSecurityService {
             while (!(batch = consumer.getPackets()).isEmpty()) {
                 packetCount += batch.size();
                 packetsTotal.increment(batch.size());
-                int hits = threatManager.detectThreats(batch, userFullName, threats);
+                int hits = threatManager.detectThreats(batch, internalUserName, threats);
                 threatsTotal.increment(hits);
             }
         } catch (IllegalRawDataException | NotOpenException e) {
-            logger.error("TrafficSecurityService: Failed to analyse packet for user {}, with exception {} ", userFullName, e.getMessage(), e);
+            logger.error("TrafficSecurityService: Failed to analyse packet for user {}, with exception {} ", internalUserName, e.getMessage(), e);
             throw new RuntimeException(e);
         }
 
-        pdfReportService.buildReport(userFullName, started, clock.instant(), packetCount, threats);
+        pdfReportService.buildReport(internalUserName, started, clock.instant(), packetCount, threats);
     }
 }

@@ -24,11 +24,11 @@ public class ThreatManager {
     }
 
     /** @return кол-во сработавших обработчиков (для метрик). */
-    public int detectThreats(List<Packet> packets, String userFullName, Collection<DetectedThreat> bucket) {
+    public int detectThreats(List<Packet> packets, String internalUserName, Collection<DetectedThreat> bucket) {
         int countDetectedDanger = 0;
         for (Packet packet : packets) {
             for (ThreatHandler handler : handlers) {
-                if (handler.checkSecurity(packet, userFullName)) {
+                if (handler.checkSecurity(packet, internalUserName)) {
                     bucket.add(new DetectedThreat(
                             packet.get(IpV4Packet.class).getHeader().getDstAddr().getHostAddress(),
                             handler.category(), Instant.now()));
