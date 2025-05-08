@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.yakdanol.nstrafficsecurityservice.service.DataSource;
 import org.yakdanol.nstrafficsecurityservice.service.processing.ProcessingCoordinatorService;
 import org.yakdanol.nstrafficsecurityservice.users.request.SecurityAnalysisRequest;
-import org.yakdanol.nstrafficsecurityservice.users.storage.UsersService;
+import org.yakdanol.nstrafficsecurityservice.storage.users.UsersService;
 
 @RestController
 @RequestMapping("/api/v1/security")

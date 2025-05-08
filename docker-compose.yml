@@ -1,20 +1,61 @@
 version: '3.8'
 
 services:
-  db:
+  # БД пользователей для анализа трафика
+  users-db:
     image: postgres:16
-    container_name: postgres_securityDB
+    container_name: postgres_usersDB
     restart: unless-stopped
     environment:
-      POSTGRES_DB: securityDB
+      POSTGRES_DB: usersDB
       POSTGRES_USER: yakdanol
       POSTGRES_PASSWORD: yakdanol
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-users-data:/var/lib/postgresql/data
 
-  redis:
+  # БД для отчетов analysis‐микросервиса
+  reports_analysis_db:
+    image: postgres:16
+    container_name: postgres_reports_analysisDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reportsDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5434:5432"
+    volumes:
+      - reports-analysis-db-data:/var/lib/postgresql/data
+
+  # БД для отчетов security‐микросервиса
+  reports_security_db:
+    image: postgres:16
+    container_name: postgres_reports_securityDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reportsDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5433:5432"
+    volumes:
+      - reports-security-db-data:/var/lib/postgresql/data
+
+  # Redis для analysis‐микросервиса
+  redis_analysis:
+    image: redis:latest
+    container_name: redis_analysisCache
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-analysis-data:/data
+
+  # Redis для security‐микросервиса
+  redis_security:
     image: redis:latest
     container_name: redis_securityCache
     restart: unless-stopped
@@ -22,10 +63,16 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - redis-security-data:/data
 
 volumes:
-  db-data:
+  db-users-data:
     driver: local
-  redis-data:
+  reports-security-db-data:
+    driver: local
+  reports-analysis-db-data:
+    driver: local
+  redis-analysis-data:
+    driver: local
+  redis-security-data:
     driver: local

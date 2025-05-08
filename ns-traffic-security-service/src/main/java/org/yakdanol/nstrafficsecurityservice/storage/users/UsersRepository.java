@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.users.storage;
+package org.yakdanol.nstrafficsecurityservice.storage.users;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

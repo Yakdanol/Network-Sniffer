@@ -50,13 +50,22 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/securityDB
+    url: jdbc:postgresql://localhost:5432/usersDB
     username: yakdanol
     password: yakdanol
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+#  datasource:
+#    url: jdbc:postgresql://localhost:5433/reportsDB
+#    username: yakdanol
+#    password: yakdanol
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+
   data:
     redis:
       host: localhost
