@@ -26,7 +26,7 @@ public class TrafficPacketPrinterService implements ApplicationRunner {
     private final ExecutorService executor;
     private volatile boolean running = true;
 
-    public TrafficPacketPrinterService(@Qualifier("kafkaPacketConsumer") PacketConsumer packetConsumer) {
+    public TrafficPacketPrinterService(@Qualifier("analysisKafkaPacketConsumer") PacketConsumer packetConsumer) {
         this.packetConsumer = packetConsumer;
         this.executor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "packet-printer-thread");

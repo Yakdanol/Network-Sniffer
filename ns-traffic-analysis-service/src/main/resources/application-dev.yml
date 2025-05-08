@@ -2,6 +2,7 @@ server:
   port: 8082
 
 traffic-analysis:
+  data-source: FILE
   processing-mode: "parallel"   # Режим работы: "sequential" or "parallel"
   pool-size: 6                  # Кол-во потоков многопоточной работы
   batch-size: 10                # Максимальное кол-во полученных за раз данных
@@ -23,9 +24,31 @@ traffic-analysis:
     retry-delay-ms: 1000           # Пауза между retry (мс)
     callback-timeout-s: 1          # Таймаут ожидания ответа от Kafka (сек)
 
+logging:
+  level:
+    root: INFO
+  file:
+    name: traffic-analysis.log
+
 spring:
   datasource:
-    url: jdbc:h2:mem:trafficdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: jdbc:postgresql://localhost:5432/usersDB
+    username: yakdanol
+    password: yakdanol
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+#  datasource:
+#    url: jdbc:postgresql://localhost:5433/reportsDB
+#    username: yakdanol
+#    password: yakdanol
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
