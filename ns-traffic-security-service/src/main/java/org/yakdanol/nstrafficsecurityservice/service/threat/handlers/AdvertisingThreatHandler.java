@@ -44,11 +44,11 @@ public class AdvertisingThreatHandler implements ThreatHandler {
     }
 
     @Override
-    public boolean checkSecurity(Packet packet, String user) {
+    public boolean checkSecurity(Packet packet, String internalUserName) {
         if (!packet.contains(IpV4Packet.class)) return false;
         String destinationIp = packet.get(IpV4Packet.class).getHeader().getDstAddr().getHostAddress();
         if (redis.sismember(CATEGORY, destinationIp)) {
-            publisher.publish(destinationIp, CATEGORY, user);
+            publisher.publish(destinationIp, CATEGORY, internalUserName);
             return true;
         }
         return false;

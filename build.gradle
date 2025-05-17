@@ -21,6 +21,7 @@ dependencies {
     implementation project(':ns-traffic-capture-service')
     implementation project(':ns-traffic-analysis-service')
     implementation project(':ns-traffic-security-service')
+    implementation project(':notification-service')
 
     implementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -13,7 +13,7 @@ public class NotificationPublisher {
      * Отправляет в сервис нотификаций строку формата:
      * {@code 202.54.10.1|PHISHING|User «Иванов И.И.» обратился к фишинговому ресурсу}.
      */
-    public void publish(String ip, String category, String userFullName) {
-        kafkaTemplate.send("notifications", ip + "|" + category + "|User " + userFullName + " accessed malicious resource");
+    public void publish(String ip, String category, String internalUserName) {
+        kafkaTemplate.send("notifications", ip + "|" + category + "|User " + internalUserName + " accessed malicious resource");
     }
 }
