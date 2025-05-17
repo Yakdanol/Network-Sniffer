@@ -1,4 +1,4 @@
-package org.yakdanol.notificationservice.service;
+package org.yakdanol.notificationservice.service.sender;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,8 +10,11 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.yakdanol.notificationservice.config.MailConfig;
 import org.yakdanol.notificationservice.model.NotificationMessage;
+import org.yakdanol.notificationservice.service.RecipientService;
+import org.yakdanol.notificationservice.users.NotificationUsers;
+import org.yakdanol.notificationservice.users.NotificationUsersRepository;
+import org.yakdanol.notificationservice.utils.MessageFormatter;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Service
@@ -22,17 +25,7 @@ public class EmailNotificationSender implements NotificationSender {
     private final JavaMailSender mailSender;
     private final RecipientService recipientService;
     private final MailConfig mailConfig;
-    private List<String> emailRecipientsCache;
-
-    @PostConstruct
-    public void init() {
-        refreshRecipients();
-    }
-
-    public void refreshRecipients() {
-        emailRecipientsCache = recipientService.getEmailRecipients();
-        log.info("EmailNotificationSender recipients updated: {} recipients loaded.", emailRecipientsCache.size());
-    }
+    private final NotificationUsersRepository notificationUsersRepository;
 
     @Override
     @Async
@@ -41,7 +34,8 @@ public class EmailNotificationSender implements NotificationSender {
             backoff = @Backoff(delay = 5000)
     )
     public void send(NotificationMessage message) {
-        if (emailRecipientsCache.isEmpty()) {
+        List<String> emailRecipients = recipientService.getEmailRecipients(message.getInternalUserName());
+        if (emailRecipients.isEmpty()) {
             log.warn("No email recipients found.");
             return;
         }
@@ -51,18 +45,22 @@ public class EmailNotificationSender implements NotificationSender {
             return;
         }
 
+        NotificationUsers user = notificationUsersRepository.findByInternalUserName(message.getInternalUserName());
+        MessageFormatter.EmailContent emailContent = MessageFormatter.buildEmail(message, user);
+
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setFrom(mailConfig.getSmtpUsername());
-        mailMessage.setTo(emailRecipientsCache.toArray(new String[0]));
-        mailMessage.setSubject("Уведомление о нарушении безопасности: " + message.getType() + " - " + message.getMedicationName());
-        mailMessage.setText("Это автоматическое уведомление от сервиса безопасности" + message.getMessage());
+        mailMessage.setTo(emailRecipients.toArray(String[]::new));
+        mailMessage.setSubject(emailContent.subject());
+        mailMessage.setText(emailContent.body());
 
         try {
             mailSender.send(mailMessage);
-            log.info("Email notification sent to {} recipients.", emailRecipientsCache.size());
         } catch (Exception e) {
             log.error("Failed to send email notifications. Attempting retry.", e);
-            throw e; // Чтобы сработал Retry
+            throw e;
         }
+        log.info("Email sent: category={} user={} recipients={}",
+                message.getCategory(), message.getInternalUserName(), emailRecipients.size());
     }
 }

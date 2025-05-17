@@ -1,4 +1,4 @@
-package org.yakdanol.notificationservice.service;
+package org.yakdanol.notificationservice.service.sender;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

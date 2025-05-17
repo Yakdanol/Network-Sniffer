@@ -7,9 +7,10 @@ import org.yakdanol.notificationservice.model.EmailRecipient;
 import org.yakdanol.notificationservice.model.TelegramRecipient;
 import org.yakdanol.notificationservice.repository.EmailRecipientRepository;
 import org.yakdanol.notificationservice.repository.TelegramRecipientRepository;
+import org.yakdanol.notificationservice.users.UserNotificationTargetsRepository;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
@@ -17,44 +18,61 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class RecipientService {
 
-    private final EmailRecipientRepository emailRecipientRepository;
-    private final TelegramRecipientRepository telegramRecipientRepository;
-    private final ConcurrentHashMap<String, List<String>> recipientsMap = new ConcurrentHashMap<>();
+    private final EmailRecipientRepository emailRepo;
+    private final TelegramRecipientRepository tgRepo;
+    private final UserNotificationTargetsRepository routeRepo;
+
+    private final Map<String, List<String>> globalEmails = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> globalTelegrams = new ConcurrentHashMap<>();
+
+    private final Map<String, List<String>> personalEmails = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> personalTelegrams = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
         loadRecipients();
     }
 
-    // Метод вызывается планировщиком ежедневно
+    /** Вызывается планировщиком раз в сутки. */
     public void refreshRecipients() {
-        log.info("Refreshing recipient lists from database.");
+        log.info("Refreshing recipient lists from Database");
         loadRecipients();
     }
 
     private void loadRecipients() {
-        List<EmailRecipient> emailRecipients = emailRecipientRepository.findAll();
-        List<TelegramRecipient> telegramRecipients = telegramRecipientRepository.findAll();
+        // ---------- глобальные ----------
+        List<String> emails = emailRepo.findAll().stream().map(EmailRecipient::getEmail).toList();
+        List<String> telegrams = tgRepo.findAll().stream().map(TelegramRecipient::getChatId).toList();
+        globalEmails.put("ALL", emails);
+        globalTelegrams.put("ALL", telegrams);
 
-        List<String> emailList = emailRecipients.stream()
-                .map(EmailRecipient::getEmail)
-                .toList();
+        // ---------- персональные ----------
+        personalEmails.clear();
+        personalTelegrams.clear();
+        routeRepo.findAll().forEach(r -> {
+            personalEmails.put(r.getMonitoredInternalUserName(), new ArrayList<>(r.getEmails()));
+            personalTelegrams.put(r.getMonitoredInternalUserName(), new ArrayList<>(r.getTelegramChatIds()));
+        });
 
-        List<String> telegramList = telegramRecipients.stream()
-                .map(TelegramRecipient::getChatId)
-                .toList();
-
-        recipientsMap.put("EMAIL", emailList);
-        recipientsMap.put("TELEGRAM", telegramList);
-
-        log.info("Loaded {} email recipients and {} telegram recipients.", emailList.size(), telegramList.size());
+        log.info("Loaded: {} global emails, {} global telegrams; {} personal routes", emails.size(), telegrams.size(), personalEmails.size());
     }
 
-    public List<String> getEmailRecipients() {
-        return recipientsMap.getOrDefault("EMAIL", List.of());
+    // ----------------- API для отправителей -----------------
+
+    public List<String> getEmailRecipients(String internalUserName) {
+        return merge(globalEmails.get("ALL"), personalEmails.get(internalUserName));
     }
 
-    public List<String> getTelegramRecipients() {
-        return recipientsMap.getOrDefault("TELEGRAM", List.of());
+    public List<String> getTelegramRecipients(String internalUserName) {
+        return merge(globalTelegrams.get("ALL"), personalTelegrams.get(internalUserName));
+    }
+
+    private List<String> merge(List<String> globals, List<String> personals) {
+        if (globals == null && personals == null) return List.of();
+        Set<String> set = new LinkedHashSet<>();
+        if (globals != null) set.addAll(globals);
+        if (personals != null) set.addAll(personals);
+
+        return List.copyOf(set);
     }
 }

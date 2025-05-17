@@ -1,21 +1,36 @@
 package org.yakdanol.notificationservice.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.*;
 
+import java.time.LocalDateTime;
+
+/**
+ * Сообщение, которым обмениваются микросервисы через Kafka.
+ */
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
 public class NotificationMessage {
 
-    private String type; // Тип уведомления: "Заканчивается срок годности", "Заканчивается лекарство"
+    /** Имя компьютера-источника. */
+    private String internalUserName;
 
+    /** Категория угрозы (фишинг, реклама, ИИ и т.д.). */
+    private String category;
+
+    /** IP-адрес или домен-источник угрозы. */
+    private String source;
+
+    /** Данные источника угрозы. */
+    private String data;
+
+    /** Время обнаружения угрозы. */
+    @JsonFormat(pattern = "yyyy:MM:dd HH:mm:ss")
+    private LocalDateTime timestamp;
+
+    /** Сообщение с описанием инцидента. */
     private String message;
-
-    private String department; // Отделение
-
-    private String medicationId;
-
-    private String medicationName;
-
-    private int quantity; // Количество
 }

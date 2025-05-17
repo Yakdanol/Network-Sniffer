@@ -6,6 +6,8 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.yakdanol.notificationservice.model.NotificationMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.yakdanol.notificationservice.service.sender.NotificationSender;
+import org.yakdanol.notificationservice.service.sender.SenderFactory;
 
 import java.util.List;
 
