@@ -38,7 +38,7 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/usersDB
+    url: jdbc:postgresql://localhost:5432/securityDB
     username: yakdanol
     password: yakdanol
   jpa:
