@@ -19,7 +19,7 @@ import org.yakdanol.nstrafficsecurityservice.storage.users.UsersService;
 @RequiredArgsConstructor
 class SecurityController {
     private final UsersService usersService;
-    private final ProcessingCoordinatorService coordinationService;
+    private final ProcessingCoordinatorService processingCoordinatorService;
 
     /**
      * Запустить live‑анализ пакетов трафика пользователя через Kafka.
@@ -65,10 +65,10 @@ class SecurityController {
         if (!usersService.isUserExist(username)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown user");
         }
-        coordinationService.enqueue(new SecurityAnalysisRequest(username, type));
+        processingCoordinatorService.enqueue(new SecurityAnalysisRequest(username, type));
     }
 
     private void cancel(String username) throws NotOpenException {
-        coordinationService.cancel(username);
+        processingCoordinatorService.cancel(username);
     }
 }

@@ -5,15 +5,14 @@ traffic-security:
   general-configs:
     data-source: FILE
     pool-size: 6           # Кол-во потоков многопоточной работы
-    queue-size: 10
+    queue-size: 100
     batch-size: 20
     report-format: pdf
   file-configs:
-    directory: "/data/input"     # Путь к директории размещения файлов для анализа
+    directory: "data/input/"     # Путь к директории размещения файлов для анализа
     batch-size: 10
   kafka-consumer-configs:
     bootstrap-servers: "localhost:9092"
-#    topic-name: "traffic.capture.WN-0001"
     group-id: "analysis-service"
     offset-reset: "latest"
     auto-commit: "false"
@@ -24,19 +23,8 @@ traffic-security:
     retries: 3                     # Кол-во повторных попыток запросов к Kafka при ошибках и сбоях
     retry-delay-ms: 1000           # Пауза между retry (мс)
     callback-timeout-s: 1          # Таймаут ожидания ответа от Kafka (сек)
-#  kafka-producer-configs:
-#    bootstrap-servers: "localhost:9092"
-#    topic-name: "traffic.capture"
-#    linger-ms: 100                  # Время ожидания (в миллисекундах) перед отправкой batch сообщений
-#    batch-size: 8192                # Максимальный размер (в байтах) batch сообщений (16384)
-#    compression-type: "snappy"      # Алгоритм сжатия данных (gzip / snappy / lz4 / zstd)
-#    request-timeout-ms: 1000        #
-#    max-block: 1000                 #
-#    retries: 3                      # Retry при ошибках и сбоях
-#    retry-delay-ms: 500             # Пауза между retry (мс)
-#    callback-timeout-s: 1           # Таймаут ожидания ответа от Kafka (сек)
-#    health-check-timeout-ms: 3000   # Время на health-check проверку (мс)
   redis-configs:
+    directory: "data/IPs/"
     server-url: "redis://localhost:6379"
 #  threat-files:
 #    phishing: "/opt/data/phishing-IPs.txt"
@@ -57,14 +45,6 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
-#  datasource:
-#    url: jdbc:postgresql://localhost:5433/reportsDB
-#    username: yakdanol
-#    password: yakdanol
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#    show-sql: true
 
   data:
     redis:

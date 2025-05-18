@@ -7,7 +7,8 @@ import org.pcap4j.packet.Packet;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.time.Instant;
+import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -19,7 +20,7 @@ public class ThreatManager {
 
     /** Инициализация при старте, все обработчики загружают данные из txt‑файлов в Redis. */
     @PostConstruct
-    void init() throws IOException {
+    void init() throws IOException, URISyntaxException {
         for (ThreatHandler handler : handlers) handler.preload();
     }
 
@@ -31,7 +32,7 @@ public class ThreatManager {
                 if (handler.checkSecurity(packet, internalUserName)) {
                     bucket.add(new DetectedThreat(
                             packet.get(IpV4Packet.class).getHeader().getDstAddr().getHostAddress(),
-                            handler.category(), Instant.now()));
+                            handler.category(), LocalDateTime.now()));
                     countDetectedDanger++;
                 }
             }
@@ -41,5 +42,5 @@ public class ThreatManager {
     }
 
     /** DTO для PDF‑отчёта. */
-    public record DetectedThreat(String ip, String category, Instant when) {}
+    public record DetectedThreat(String ip, String category, LocalDateTime when) {}
 }
