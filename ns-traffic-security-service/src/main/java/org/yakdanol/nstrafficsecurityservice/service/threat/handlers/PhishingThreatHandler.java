@@ -7,21 +7,24 @@ import lombok.RequiredArgsConstructor;
 import org.pcap4j.packet.IpV4Packet;
 import org.pcap4j.packet.Packet;
 import org.springframework.stereotype.Component;
+import org.yakdanol.nstrafficsecurityservice.config.TrafficSecurityConfig;
 import org.yakdanol.nstrafficsecurityservice.service.notification.NotificationPublisher;
 import org.yakdanol.nstrafficsecurityservice.service.threat.ThreatHandler;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
 public class PhishingThreatHandler implements ThreatHandler {
 
+    private final TrafficSecurityConfig configs;
     private static final String CATEGORY = "PHISHING";
-    private static final Path FILE = Path.of("C:\\Users\\Yakdanol\\Desktop\\Java\\Diploma\\Network-Sniffer\\ns-traffic-security-service\\src\\main\\resources\\data\\IPs\\phishing-IPs.txt");
-
     private final RedisClient redisClient;
     private RedisCommands<String, String> redis;
     private final NotificationPublisher publisher;
@@ -31,13 +34,16 @@ public class PhishingThreatHandler implements ThreatHandler {
         this.redis = redisClient.connect().sync();
     }
 
-    @Override public String category() {
+    @Override
+    public String category() {
         return CATEGORY;
     }
 
     @Override
-    public void preload() throws IOException {
+    public void preload() throws IOException, URISyntaxException {
         redis.del(CATEGORY);
+        URL path = getClass().getClassLoader().getResource(configs.getRedisConfigs().getDirectory() + "phishing-IPs.txt");
+        Path FILE = Paths.get(path.toURI());
         try (Stream<String> lines = Files.lines(FILE)) {
             redis.sadd(CATEGORY, lines.toArray(String[]::new));
         }

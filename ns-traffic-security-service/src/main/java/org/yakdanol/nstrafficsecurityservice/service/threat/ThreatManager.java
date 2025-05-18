@@ -7,6 +7,7 @@ import org.pcap4j.packet.Packet;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -19,7 +20,7 @@ public class ThreatManager {
 
     /** Инициализация при старте, все обработчики загружают данные из txt‑файлов в Redis. */
     @PostConstruct
-    void init() throws IOException {
+    void init() throws IOException, URISyntaxException {
         for (ThreatHandler handler : handlers) handler.preload();
     }
 

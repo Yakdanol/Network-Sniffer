@@ -53,7 +53,6 @@ public class TrafficSecurityService {
      * Запускает анализ и возвращает список угроз — понадобится для PDF‑отчёта.
      */
     public void analyse(PacketConsumer consumer, String internalUserName) {
-
         List<ThreatManager.DetectedThreat> threats = new ArrayList<>();
         Instant started = clock.instant();
         long packetCount = 0;

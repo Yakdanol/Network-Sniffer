@@ -48,7 +48,6 @@ public class TrafficSecurityConfig {
     @RequiredArgsConstructor
     public static class KafkaConsumerConfigs {
         private String bootstrapServers;
-        private String topicName;
         private String groupId;
         private String offsetReset;
         private String autoCommit;
@@ -66,6 +65,7 @@ public class TrafficSecurityConfig {
     @Setter
     @RequiredArgsConstructor
     public static class RedisConfigs {
+        private String directory;
         private String serverUrl;
     }
 }
