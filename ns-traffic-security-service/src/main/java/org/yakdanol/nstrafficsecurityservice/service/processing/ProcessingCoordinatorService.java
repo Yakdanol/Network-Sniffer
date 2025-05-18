@@ -15,8 +15,6 @@ import org.yakdanol.nstrafficsecurityservice.storage.users.Users;
 import org.yakdanol.nstrafficsecurityservice.storage.users.UsersRepository;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.*;
@@ -109,7 +107,7 @@ public class ProcessingCoordinatorService {
         kafkaConsumer.subscribe(user.getKafkaTopicName());
         activeConsumer = kafkaConsumer;
         try {
-            securityService.analyse(kafkaConsumer, user.getInternalUserName());
+            securityService.analyse(kafkaConsumer, user.getInternalUserName(), user.getFullName());
         } catch (RuntimeException ex) {
             if (!(ex instanceof CancellationException)) throw ex;
         } finally {
@@ -128,7 +126,7 @@ public class ProcessingCoordinatorService {
         try {
             fileConsumer.open(pcap);
             activeConsumer = fileConsumer;
-            securityService.analyse(fileConsumer, user.getInternalUserName());
+            securityService.analyse(fileConsumer, user.getInternalUserName(), user.getFullName());
         } catch (RuntimeException ex) {
             if (!(ex instanceof CancellationException)) throw ex;
         } catch (PcapNativeException e) {

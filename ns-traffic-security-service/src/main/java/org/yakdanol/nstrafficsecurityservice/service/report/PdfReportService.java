@@ -10,8 +10,7 @@ import org.yakdanol.nstrafficsecurityservice.service.threat.ThreatManager;
 import java.awt.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.ZoneId;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Stream;
@@ -19,25 +18,26 @@ import java.util.stream.Stream;
 @Service
 public class PdfReportService implements ReportService {
     Logger logger = LoggerFactory.getLogger(PdfReportService.class);
-    private static final Path OUT_DIR = Path.of("/opt/reports");
-    private static final DateTimeFormatter SEC_PRECISION = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss").withZone(ZoneId.systemDefault());
+    private static final Path OUT_DIR = Path.of("ns-traffic-security-service/src/main/resources/data/reports");
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     /**
      * Создаёт pdf с помощью OpenPDF.
      */
     @Override
-    public void buildReport(String user, Instant from, Instant to,
+    public void buildReport(String user, LocalDateTime startTime, LocalDateTime finishTime,
                             long packets, List<ThreatManager.DetectedThreat> threats) {
         logger.info("Building report for {}", user);
         try (var document = new com.lowagie.text.Document()) {
-            String fileName = user.replace(' ', '_') + "-" + Instant.now().toEpochMilli() + ".pdf";
+            String fileName = user + "." + LocalDateTime.now().format(DATE) + ".pdf";
             Files.createDirectories(OUT_DIR);
             var pdfWriter = PdfWriter.getInstance(document, Files.newOutputStream(OUT_DIR.resolve(fileName)));
             document.open();
 
             document.add(new Paragraph("Traffic security report for user: " + user));
-            document.add(new Paragraph("Generated at: " + SEC_PRECISION.format(Instant.now())));
-            document.add(new Paragraph("Analysis period : " + from + " – " + to));
+            document.add(new Paragraph("Generated at: " + finishTime.format(TIMESTAMP)));
+            document.add(new Paragraph("Analysis period : " + startTime.format(TIMESTAMP) + " – " + finishTime.format(TIMESTAMP)));
             document.add(new Paragraph("Analysed packets: " + packets));
             document.add(new Paragraph("Threats found: " + threats.size()));
             document.add(Chunk.NEWLINE);
@@ -48,10 +48,10 @@ public class PdfReportService implements ReportService {
                 cell.setBackgroundColor(Color.LIGHT_GRAY);
                 table.addCell(cell);
             });
-            for (var t : threats) {
-                table.addCell(t.ip());
-                table.addCell(t.category());
-                table.addCell(t.when().toString());
+            for (var threat : threats) {
+                table.addCell(threat.ip());
+                table.addCell(threat.category());
+                table.addCell(threat.when().format(TIMESTAMP));
             }
             document.add(table);
             document.close();

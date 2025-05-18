@@ -12,10 +12,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficsecurityservice.service.consumer.PacketConsumer;
 import org.yakdanol.nstrafficsecurityservice.service.report.PdfReportService;
+import org.yakdanol.nstrafficsecurityservice.service.report.SecurityReportSummary;
+import org.yakdanol.nstrafficsecurityservice.service.report.SecurityReportSummaryRepository;
 import org.yakdanol.nstrafficsecurityservice.service.threat.ThreatManager;
 
 import java.time.Clock;
-import java.time.Instant;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,14 +33,16 @@ public class TrafficSecurityService {
     private final Clock clock;
     private final Counter packetsTotal;
     private final Counter threatsTotal;
+    private final SecurityReportSummaryRepository securityReportSummaryRepository;
 
     @Autowired
     public TrafficSecurityService(ThreatManager threatManager,
                                   PdfReportService pdfReportService,
-                                  MeterRegistry registry) {
+                                  MeterRegistry registry, SecurityReportSummaryRepository securityReportSummaryRepository) {
         this.threatManager = threatManager;
         this.pdfReportService = pdfReportService;
         this.registry = registry;
+        this.securityReportSummaryRepository = securityReportSummaryRepository;
         this.clock = Clock.systemUTC();
 
         this.packetsTotal = Counter.builder("packets_total")
@@ -52,9 +57,9 @@ public class TrafficSecurityService {
     /**
      * Запускает анализ и возвращает список угроз — понадобится для PDF‑отчёта.
      */
-    public void analyse(PacketConsumer consumer, String internalUserName) {
+    public void analyse(PacketConsumer consumer, String internalUserName, String fullName) {
         List<ThreatManager.DetectedThreat> threats = new ArrayList<>();
-        Instant started = clock.instant();
+        LocalDateTime started  = LocalDateTime.now(clock);
         long packetCount = 0;
 
         try (consumer) {
@@ -70,6 +75,18 @@ public class TrafficSecurityService {
             throw new RuntimeException(e);
         }
 
-        pdfReportService.buildReport(internalUserName, started, clock.instant(), packetCount, threats);
+        LocalDateTime finished = LocalDateTime.now(clock);
+        Duration dur = Duration.between(started, finished);
+        String durationStr = String.format("%02d:%02d:%02d", dur.toHoursPart(), dur.toMinutesPart(), dur.toSecondsPart()
+        );
+        SecurityReportSummary summary = SecurityReportSummary.builder()
+                .fullName(fullName)
+                .startedAt(started)
+                .duration(durationStr)
+                .packetsProcessed(packetCount)
+                .threatsFound(threats.size())
+                .build();
+        securityReportSummaryRepository.save(summary);
+        pdfReportService.buildReport(fullName, started, finished, packetCount, threats);
     }
 }
