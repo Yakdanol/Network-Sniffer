@@ -1,6 +1,7 @@
 package org.yakdanol.nstrafficanalysisservice.config;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
@@ -10,29 +11,41 @@ import org.yakdanol.nstrafficanalysisservice.service.DataSource;
 @ConfigurationProperties(prefix = "traffic-analysis")
 @Getter
 @Setter
+@RequiredArgsConstructor
 public class TrafficAnalysisConfig {
 
-    // Общие поля
-    DataSource dataSource;
-    private String processingMode;
-    private int poolSize;
-    private int batchSize;
-    private String reportFormat;
-
+    // Общие параметры работы микросервиса
+    private GeneralConfig generalConfigs;
     // Параметры для работы с файлами
-    private FileConfig fileConfig = new FileConfig();
+    private FileConfig fileConfigs;
     // Параметры для работы с Kafka
-    private KafkaConsumerConfigs kafkaConsumerConfigs = new KafkaConsumerConfigs();
+    private KafkaConsumerConfigs kafkaConsumerConfigs;
+    // Параметры работы с Redis
+    private RedisConfigs redisConfigs;
 
     @Getter
     @Setter
-    public static class FileConfig {
-        private String incomingFormat;
-        private String directory;
+    @RequiredArgsConstructor
+    public static class GeneralConfig {
+        DataSource dataSource;
+        private String processingMode;
+        private int poolSize;
+        private int queueSize;
+        private int batchSize;
+        private String reportFormat;
     }
 
     @Getter
     @Setter
+    @RequiredArgsConstructor
+    public static class FileConfig {
+        private String directory;
+        private int batchSize;
+    }
+
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
     public static class KafkaConsumerConfigs {
         private String bootstrapServers;
         private String topicName;
@@ -47,5 +60,13 @@ public class TrafficAnalysisConfig {
         private int retries;
         private int retryDelayMs;
         private int callbackTimeoutS;
+    }
+
+    @Getter
+    @Setter
+    @RequiredArgsConstructor
+    public static class RedisConfigs {
+        private String directory;
+        private String serverUrl;
     }
 }

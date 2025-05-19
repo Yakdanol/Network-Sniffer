@@ -1,11 +1,11 @@
-package org.yakdanol.nstrafficsecurityservice.users.storage;
+package org.yakdanol.nstrafficanalysisservice.users.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-@Service("securityUsersService")
+@Service("analysisUsersService")
 @RequiredArgsConstructor
 public class UsersService {
     private final UsersRepository usersRepository;

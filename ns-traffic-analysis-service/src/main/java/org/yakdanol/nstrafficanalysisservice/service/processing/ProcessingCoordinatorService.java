@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.service.processing;
+package org.yakdanol.nstrafficanalysisservice.service.processing;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -7,30 +7,30 @@ import lombok.extern.slf4j.Slf4j;
 import org.pcap4j.core.NotOpenException;
 import org.pcap4j.core.PcapNativeException;
 import org.springframework.stereotype.Service;
-import org.yakdanol.nstrafficsecurityservice.config.TrafficSecurityConfig;
-import org.yakdanol.nstrafficsecurityservice.service.consumer.*;
-import org.yakdanol.nstrafficsecurityservice.users.request.SecurityAnalysisRequest;
-import org.yakdanol.nstrafficsecurityservice.users.storage.Users;
-import org.yakdanol.nstrafficsecurityservice.users.storage.UsersRepository;
+import org.yakdanol.nstrafficanalysisservice.config.TrafficAnalysisConfig;
+import org.yakdanol.nstrafficanalysisservice.service.consumer.*;
+import org.yakdanol.nstrafficanalysisservice.users.request.AnalysisRequest;
+import org.yakdanol.nstrafficanalysisservice.users.storage.Users;
+import org.yakdanol.nstrafficanalysisservice.users.storage.UsersRepository;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.*;
 
-@Service("securityProcessingCoordinatorService")
+@Service("analysisProcessingCoordinatorService")
 @Slf4j
 @RequiredArgsConstructor
 public class ProcessingCoordinatorService {
 
-    private final TrafficSecurityConfig configs;
+    private final TrafficAnalysisConfig configs;
     private final KafkaPacketConsumer kafkaConsumer;
     private final FilePacketConsumer fileConsumer;
-    private final TrafficSecurityService securityService;
+    private final TrafficAnalysisService analysisService;
     private final UsersRepository repository;
 
     /** Очередь входящих задач. */
-    private BlockingQueue<SecurityAnalysisRequest> queue;
+    private BlockingQueue<AnalysisRequest> queue;
     /** Один воркер‑поток. */
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     /** Текущий consumer — нужен, чтобы послать cancel(). */
@@ -54,7 +54,7 @@ public class ProcessingCoordinatorService {
     /**
      * Кладёт задачу в очередь.
      */
-    public void enqueue(SecurityAnalysisRequest task) {
+    public void enqueue(AnalysisRequest task) {
         boolean ok = queue.offer(task);
         log.info("Enqueue task [{}|{}] -> {}", task.getFullUserName(), task.getType(), ok ? "OK" : "QUEUE FULL");
     }
@@ -76,7 +76,7 @@ public class ProcessingCoordinatorService {
     private void loop() {
         try {
             while (true) {
-                SecurityAnalysisRequest task = queue.take();
+                AnalysisRequest task = queue.take();
                 currentUser = task.getFullUserName();
                 log.info("Start processing {} in mode {}", currentUser, task.getType());
 
@@ -101,12 +101,12 @@ public class ProcessingCoordinatorService {
         }
     }
 
-    private void processKafka(SecurityAnalysisRequest task) {
+    private void processKafka(AnalysisRequest task) {
         Users user = repository.findByFullName(task.getFullUserName()).orElseThrow();
         kafkaConsumer.subscribe(user.getKafkaTopicName());
         activeConsumer = kafkaConsumer;
         try {
-            securityService.analyse(kafkaConsumer, user.getInternalUserName(), user.getFullName());
+            analysisService.analyse(kafkaConsumer, user.getInternalUserName(), user.getFullName());
         } catch (RuntimeException ex) {
             if (!(ex instanceof CancellationException)) throw ex;
         } finally {
@@ -114,7 +114,7 @@ public class ProcessingCoordinatorService {
         }
     }
 
-    private void processFile(SecurityAnalysisRequest task) throws URISyntaxException {
+    private void processFile(AnalysisRequest task) throws URISyntaxException {
         Users user = repository.findByFullName(task.getFullUserName()).orElseThrow();
         URL path = getClass().getClassLoader().getResource(configs.getFileConfigs().getDirectory() + user.getInternalUserName() + ".pcap");
         File pcap = new File(path.toURI()).toPath().toFile();
@@ -125,7 +125,7 @@ public class ProcessingCoordinatorService {
         try {
             fileConsumer.open(pcap);
             activeConsumer = fileConsumer;
-            securityService.analyse(fileConsumer, user.getInternalUserName(), user.getFullName());
+            analysisService.analyse(fileConsumer, user.getInternalUserName(), user.getFullName());
         } catch (RuntimeException ex) {
             if (!(ex instanceof CancellationException)) throw ex;
         } catch (PcapNativeException e) {

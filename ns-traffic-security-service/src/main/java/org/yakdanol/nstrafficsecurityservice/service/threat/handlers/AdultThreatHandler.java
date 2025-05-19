@@ -14,17 +14,15 @@ import org.yakdanol.nstrafficsecurityservice.service.threat.ThreatHandler;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
-public class AdvertisingThreatHandler implements ThreatHandler {
+public class AdultThreatHandler implements ThreatHandler {
 
     private final TrafficSecurityConfig configs;
-    private static final String CATEGORY = "ADVERTISING";
+    private static final String CATEGORY = "ADULT";
     private final RedisClient redisClient;
     private RedisCommands<String, String> redis;
     private final NotificationPublisher publisher;
@@ -42,7 +40,7 @@ public class AdvertisingThreatHandler implements ThreatHandler {
     @Override
     public void preload() throws IOException, URISyntaxException {
         redis.del(CATEGORY);
-        URL path = getClass().getClassLoader().getResource(configs.getRedisConfigs().getDirectory() + "advertising-IPs.txt");
+        URL path = getClass().getClassLoader().getResource(configs.getRedisConfigs().getDirectory() + "adult-IPs.txt");
         Path FILE = Paths.get(path.toURI());
         try (Stream<String> lines = Files.lines(FILE)) {
             redis.sadd(CATEGORY, lines.toArray(String[]::new));

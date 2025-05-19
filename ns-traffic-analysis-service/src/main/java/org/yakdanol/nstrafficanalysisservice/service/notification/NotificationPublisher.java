@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.service.notification;
+package org.yakdanol.nstrafficanalysisservice.service.notification;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +22,7 @@ public class NotificationPublisher {
      * Формирует {@link NotificationMessage}, сериализует его в JSON
      * и отправляет в Kafka-топик <b>notification-topic</b>.
      *
-     * @param data обнаруженный IP-адрес
+     * @param data обнаруженный источник угрозы
      * @param category категория угрозы (PHISHING, ADVERTISING …)
      * @param internalUserName имя ПК / учётки сотрудника
      */
@@ -30,7 +30,7 @@ public class NotificationPublisher {
         NotificationMessage msg = new NotificationMessage(
                 internalUserName,
                 category,
-                "IP-address",
+                "Domain-address",
                 data,
                 LocalDateTime.now(),
                 String.format("User %s accessed %s resource %s", internalUserName, category.toLowerCase(), data)

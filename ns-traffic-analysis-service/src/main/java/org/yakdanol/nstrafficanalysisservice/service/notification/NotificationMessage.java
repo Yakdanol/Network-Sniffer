@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.service.notification;
+package org.yakdanol.nstrafficanalysisservice.service.notification;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;

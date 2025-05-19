@@ -4,7 +4,7 @@ server:
 traffic-capture:
   user: "WN-0001"        # Уникальное имя пользователя
   system: "Windows 10"   # Система пользователя
-  mode: remote            # Режим работы (local / remote / local_and_remote)
+  mode: local            # Режим работы (local / remote / local_and_remote)
   interface-name: "RZ616 Wi-Fi 6E 160MHz"             # Имя сетевого интерфейса для захвата трафика
   log-directory: "ns-traffic-capture-service\\logs"   # Директория для сохранения лог-файлов микросервиса
   log-format: pcap     # Формат логирования: json, xml, csv, text

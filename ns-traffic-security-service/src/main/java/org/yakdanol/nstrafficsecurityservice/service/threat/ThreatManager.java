@@ -42,5 +42,5 @@ public class ThreatManager {
     }
 
     /** DTO для PDF‑отчёта. */
-    public record DetectedThreat(String ip, String category, LocalDateTime when) {}
+    public record DetectedThreat(String data, String category, LocalDateTime when) {}
 }

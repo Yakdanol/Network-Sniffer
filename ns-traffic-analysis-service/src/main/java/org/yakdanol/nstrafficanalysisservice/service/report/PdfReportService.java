@@ -1,11 +1,11 @@
-package org.yakdanol.nstrafficsecurityservice.service.report;
+package org.yakdanol.nstrafficanalysisservice.service.report;
 
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.yakdanol.nstrafficsecurityservice.service.threat.ThreatManager;
+import org.yakdanol.nstrafficanalysisservice.service.analysis.AnalysisManager;
 
 import java.awt.*;
 import java.nio.file.Files;
@@ -15,10 +15,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Stream;
 
-@Service("securityReportService")
+@Service("analysisReportService")
 public class PdfReportService implements ReportService {
     Logger logger = LoggerFactory.getLogger(PdfReportService.class);
-    private static final Path OUT_DIR = Path.of("ns-traffic-security-service/src/main/resources/data/reports");
+    private static final Path OUT_DIR = Path.of("ns-traffic-analysis-service/src/main/resources/data/reports");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -27,7 +27,7 @@ public class PdfReportService implements ReportService {
      */
     @Override
     public void buildReport(String user, LocalDateTime startTime, LocalDateTime finishTime,
-                            long packets, List<ThreatManager.DetectedThreat> threats) {
+                            long packets, List<AnalysisManager.DetectedThreat> threats) {
         logger.info("Building report for {}", user);
         try (var document = new com.lowagie.text.Document()) {
             String fileName = user + "." + LocalDateTime.now().format(DATE) + ".pdf";
@@ -35,7 +35,7 @@ public class PdfReportService implements ReportService {
             var pdfWriter = PdfWriter.getInstance(document, Files.newOutputStream(OUT_DIR.resolve(fileName)));
             document.open();
 
-            document.add(new Paragraph("Traffic security report for user: " + user));
+            document.add(new Paragraph("Traffic analysis report for user: " + user));
             document.add(new Paragraph("Generated at: " + finishTime.format(TIMESTAMP)));
             document.add(new Paragraph("Analysis period : " + startTime.format(TIMESTAMP) + " – " + finishTime.format(TIMESTAMP)));
             document.add(new Paragraph("Analysed packets: " + packets));
@@ -49,7 +49,7 @@ public class PdfReportService implements ReportService {
                 table.addCell(cell);
             });
             for (var threat : threats) {
-                table.addCell(threat.data());
+                table.addCell(threat.domain());
                 table.addCell(threat.category());
                 table.addCell(threat.when().format(TIMESTAMP));
             }

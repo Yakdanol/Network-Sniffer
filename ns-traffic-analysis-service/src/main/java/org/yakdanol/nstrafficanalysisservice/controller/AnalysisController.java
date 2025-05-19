@@ -1,45 +1,78 @@
 package org.yakdanol.nstrafficanalysisservice.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
-import org.yakdanol.nstrafficanalysisservice.model.AnalysisTask;
-import org.yakdanol.nstrafficanalysisservice.service.AnalysisOrchestrator;
-
-import java.util.List;
+import org.pcap4j.core.NotOpenException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import org.yakdanol.nstrafficanalysisservice.service.DataSource;
+import org.yakdanol.nstrafficanalysisservice.service.processing.ProcessingCoordinatorService;
+import org.yakdanol.nstrafficanalysisservice.users.request.AnalysisRequest;
+import org.yakdanol.nstrafficanalysisservice.users.storage.UsersService;
 
 @RestController
-@RequestMapping("/analysis")
+@RequestMapping("/api/v1/analysis")
 @RequiredArgsConstructor
-public class AnalysisController {
+class AnalysisController {
+    private final UsersService usersService;
+    private final ProcessingCoordinatorService processingCoordinatorService;
 
-    private final AnalysisOrchestrator orchestrator;
-
-    @PostMapping("/tasks/add")
-    public String addTasks(@RequestBody List<AnalysisTask> tasks) {
-        orchestrator.addTasks(tasks);
-        return "Tasks added: " + tasks.size();
+    /**
+     * Запустить live‑анализ пакетов трафика пользователя через Kafka.
+     */
+    @PostMapping("/live/start/{username}")
+    public ResponseEntity<?> startLive(@PathVariable String username) {
+        enqueue(username, DataSource.KAFKA);
+        String message = String.format("Live-анализ для пользователя '%s' добавлен в очередь.", username);
+        return ResponseEntity.accepted().body(message);
     }
 
-    @PostMapping("/tasks/start")
-    public String startAll() {
-        orchestrator.startAll();
-        return "Analysis started";
+    /**
+     * Принудительно остановить текущий live‑анализ пользователя через Kafka.
+     */
+    @PostMapping("/live/stop/{username}")
+    public ResponseEntity<?> stopLive(@PathVariable String username) {
+        try {
+            cancel(username);
+            String message = String.format("Live-анализ для пользователя '%s' успешно отменён.", username);
+            return ResponseEntity.ok().body(message);
+        } catch (NotOpenException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
-    @PostMapping("/stop")
-    public String stopAll() {
-        orchestrator.stopAll();
-        return "All analyses stopped";
+    /** Запустить анализ пакетов трафика пользователя из файла. */
+    @PostMapping("/file/start/{username}")
+    public ResponseEntity<?> startOffline(@PathVariable String username) {
+        enqueue(username, DataSource.FILE);
+        String message = String.format("Offline-анализ файла для пользователя '%s' добавлен в очередь.", username);
+        return ResponseEntity.accepted().body(message);
     }
 
-    @GetMapping("/status")
-    public String getStatus() {
-        // Упрощенный вариант
-        return "Status not fully implemented. Possibly show queued tasks, current tasks, etc.";
+    /** Остановить анализ пакетов трафика пользователя из файла. */
+    @PostMapping("/file/stop/{username}")
+    public ResponseEntity<?> stopOffline(@PathVariable String username) {
+        try {
+            cancel(username);
+            String message = String.format("Offline-анализ файла для пользователя '%s' успешно отменён.", username);
+            return ResponseEntity.ok().body(message);
+        } catch (NotOpenException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
-    @GetMapping("/report")
-    public String getReport() {
-        return "No real report yet. Implement downloading from ReportGeneratorService if needed.";
+    private void enqueue(String username, DataSource type) {
+        if (!usersService.isUserExist(username)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown user");
+        }
+        processingCoordinatorService.enqueue(new AnalysisRequest(username, type));
+    }
+
+    private void cancel(String username) throws NotOpenException {
+        processingCoordinatorService.cancel(username);
     }
 }
