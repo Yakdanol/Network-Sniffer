@@ -11,8 +11,8 @@ import org.yakdanol.nstrafficsecurityservice.config.TrafficSecurityConfig;
 import org.yakdanol.nstrafficsecurityservice.service.consumer.*;
 import org.yakdanol.nstrafficsecurityservice.service.security.TrafficSecurityService;
 import org.yakdanol.nstrafficsecurityservice.users.request.SecurityAnalysisRequest;
-import org.yakdanol.nstrafficsecurityservice.storage.users.Users;
-import org.yakdanol.nstrafficsecurityservice.storage.users.UsersRepository;
+import org.yakdanol.nstrafficsecurityservice.users.storage.Users;
+import org.yakdanol.nstrafficsecurityservice.users.storage.UsersRepository;
 
 import java.io.File;
 import java.net.URISyntaxException;

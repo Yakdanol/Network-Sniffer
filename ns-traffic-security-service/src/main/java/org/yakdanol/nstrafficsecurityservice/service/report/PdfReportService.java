@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 public class PdfReportService implements ReportService {
     Logger logger = LoggerFactory.getLogger(PdfReportService.class);
     private static final Path OUT_DIR = Path.of("ns-traffic-security-service/src/main/resources/data/reports");
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     private static final DateTimeFormatter TIMESTAMP = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     /**

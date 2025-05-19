@@ -12,7 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.yakdanol.nstrafficsecurityservice.service.DataSource;
 import org.yakdanol.nstrafficsecurityservice.service.processing.ProcessingCoordinatorService;
 import org.yakdanol.nstrafficsecurityservice.users.request.SecurityAnalysisRequest;
-import org.yakdanol.nstrafficsecurityservice.storage.users.UsersService;
+import org.yakdanol.nstrafficsecurityservice.users.storage.UsersService;
 
 @RestController
 @RequestMapping("/api/v1/security")
@@ -27,7 +27,8 @@ class SecurityController {
     @PostMapping("/live/start/{username}")
     public ResponseEntity<?> startLive(@PathVariable String username) {
         enqueue(username, DataSource.KAFKA);
-        return ResponseEntity.accepted().build();
+        String message = String.format("Live-анализ для пользователя '%s' добавлен в очередь.", username);
+        return ResponseEntity.accepted().body(message);
     }
 
     /**
@@ -37,7 +38,8 @@ class SecurityController {
     public ResponseEntity<?> stopLive(@PathVariable String username) {
         try {
             cancel(username);
-            return ResponseEntity.ok().build();
+            String message = String.format("Live-анализ для пользователя '%s' успешно отменён.", username);
+            return ResponseEntity.ok().body(message);
         } catch (NotOpenException e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -47,7 +49,8 @@ class SecurityController {
     @PostMapping("/file/start/{username}")
     public ResponseEntity<?> startOffline(@PathVariable String username) {
         enqueue(username, DataSource.FILE);
-        return ResponseEntity.accepted().build();
+        String message = String.format("Offline-анализ файла для пользователя '%s' добавлен в очередь.", username);
+        return ResponseEntity.accepted().body(message);
     }
 
     /** Остановить анализ пакетов трафика пользователя из файла. */
@@ -55,7 +58,8 @@ class SecurityController {
     public ResponseEntity<?> stopOffline(@PathVariable String username) {
         try {
             cancel(username);
-            return ResponseEntity.ok().build();
+            String message = String.format("Offline-анализ файла для пользователя '%s' успешно отменён.", username);
+            return ResponseEntity.ok().body(message);
         } catch (NotOpenException e) {
             return ResponseEntity.internalServerError().build();
         }

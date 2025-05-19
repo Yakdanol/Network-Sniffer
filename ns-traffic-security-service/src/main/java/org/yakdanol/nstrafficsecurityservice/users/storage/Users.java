@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.storage.users;
+package org.yakdanol.nstrafficsecurityservice.users.storage;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

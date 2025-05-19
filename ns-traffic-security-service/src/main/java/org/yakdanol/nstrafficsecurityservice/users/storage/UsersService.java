@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.storage.users;
+package org.yakdanol.nstrafficsecurityservice.users.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

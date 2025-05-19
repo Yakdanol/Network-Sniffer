@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Configuration("securityKafkaConsumerConfig")
 @RequiredArgsConstructor
-public class KafkaConfigs {
+public class KafkaConsumerConfigs {
     private final TrafficSecurityConfig trafficSecurityConfig;
 
     @Bean

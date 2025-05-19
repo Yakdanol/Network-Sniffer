@@ -4,6 +4,7 @@ server:
 traffic-security:
   general-configs:
     data-source: FILE
+    processing-mode: "parallel"
     pool-size: 6           # Кол-во потоков многопоточной работы
     queue-size: 100
     batch-size: 20

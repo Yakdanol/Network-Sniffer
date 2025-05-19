@@ -1,6 +1,5 @@
 package org.yakdanol.nstrafficsecurityservice.service.consumer;
 
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -23,7 +22,6 @@ public class KafkaPacketConsumer implements PacketConsumer {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPacketConsumer.class);
     private final TrafficSecurityConfig trafficSecurityConfig;
 
-//    private final Consumer<String, byte[]> consumer;
     private final KafkaConsumer<String, byte[]> consumer;
     private volatile boolean stopped = false;
 
