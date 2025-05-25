@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+# PostgreSQL
+  # БД для security‐микросервиса
+  security-db:
+    image: postgres:16
+    container_name: postgres_securityDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: securityDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5432:5432"
+    volumes:
+      - security-db-data:/var/lib/postgresql/data
+
+  # БД для analysis‐микросервиса
+  analysis_db:
+    image: postgres:16
+    container_name: postgres_analysisDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: analysisDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5433:5432"
+    volumes:
+      - analysis-db-data:/var/lib/postgresql/data
+
+  # БД для notification-микросервиса
+  users-notification-db:
+    image: postgres:16
+    container_name: postgres_notification_usersDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: notification_usersDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5435:5432"
+    volumes:
+      - db-notification-users-data:/var/lib/postgresql/data
+
+# Redis
+  # Redis для analysis‐микросервиса
+  redis_analysis:
+    image: redis:latest
+    container_name: redis_analysisCache
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis-analysis-data:/data
+
+  # Redis для security‐микросервиса
+  redis_security:
+    image: redis:latest
+    container_name: redis_securityCache
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-security-data:/data
+
+volumes:
+  security-db-data:
+    driver: local
+  db-notification-users-data:
+    driver: local
+  analysis-db-data:
+    driver: local
+  redis-analysis-data:
+    driver: local
+  redis-security-data:
+    driver: local

@@ -1,0 +1,59 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'org.yakdanol'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(22)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Spring
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-logging:3.3.6'
+
+	// Kafka
+	implementation 'org.springframework.kafka:spring-kafka:3.3.0'
+
+	// Pcap4j
+	implementation 'org.pcap4j:pcap4j-core:1.8.2'
+	implementation 'org.pcap4j:pcap4j-packetfactory-static:1.8.2'
+
+	// Jackson-databind
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.18.3'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.3'
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.18.3'
+
+	// Lombok
+	implementation 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+
+	// Logback
+//	testImplementation 'ch.qos.logback:logback-classic:1.4.14'
+//	implementation 'ch.qos.logback:logback-core:1.4.14'
+
+	// Prometheus
+	implementation 'io.micrometer:micrometer-registry-prometheus:1.14.1'
+
+	// Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

@@ -1,0 +1,53 @@
+server:
+  port: 8083
+
+traffic-security:
+  general-configs:
+    data-source: FILE
+    processing-mode: "parallel"
+    pool-size: 6           # Кол-во потоков многопоточной работы
+    queue-size: 100
+    batch-size: 20
+    report-format: pdf
+  file-configs:
+    directory: "data/input/"     # Путь к директории размещения файлов для анализа
+    batch-size: 10
+  kafka-consumer-configs:
+    bootstrap-servers: "localhost:9092"
+    group-id: "analysis-service"
+    offset-reset: "latest"
+    auto-commit: "false"
+    session-timeout-ms: 30000      # Время ответа на heartbeat пакет
+    heartbeat-interval-ms: 10000   # Интервал между отправками heartbeat сообщений
+    linger-ms: 100                 # Время ожидания (в миллисекундах) перед отправкой batch сообщений
+    batch-size: 10                 #  Максимальное кол-во полученных за раз данных
+    retries: 3                     # Кол-во повторных попыток запросов к Kafka при ошибках и сбоях
+    retry-delay-ms: 1000           # Пауза между retry (мс)
+    callback-timeout-s: 1          # Таймаут ожидания ответа от Kafka (сек)
+  redis-configs:
+    directory: "data/IPs/"
+    server-url: "redis://localhost:6379"
+#  threat-files:
+#    phishing: "/opt/data/phishing-IPs.txt"
+#    advertising: "/opt/data/advertising-IPs.txt"
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: traffic-security.log
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/securityDB
+    username: yakdanol
+    password: yakdanol
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379

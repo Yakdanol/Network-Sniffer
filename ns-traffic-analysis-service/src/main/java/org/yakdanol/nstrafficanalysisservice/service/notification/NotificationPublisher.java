@@ -1,0 +1,47 @@
+package org.yakdanol.nstrafficanalysisservice.service.notification;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationPublisher {
+
+    private static final String TOPIC = "notification-topic";
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * Формирует {@link NotificationMessage}, сериализует его в JSON
+     * и отправляет в Kafka-топик <b>notification-topic</b>.
+     *
+     * @param data обнаруженный источник угрозы
+     * @param category категория угрозы (PHISHING, ADVERTISING …)
+     * @param internalUserName имя ПК / учётки сотрудника
+     */
+    public void publish(String data, String category, String internalUserName) {
+        NotificationMessage msg = new NotificationMessage(
+                internalUserName,
+                category,
+                "Domain-address",
+                data,
+                LocalDateTime.now(),
+                String.format("User %s accessed %s resource %s", internalUserName, category.toLowerCase(), data)
+        );
+
+        try {
+            String json = objectMapper.writeValueAsString(msg);
+            kafkaTemplate.send(TOPIC, json);
+            log.debug("Notification sent: {}", json);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize NotificationMessage {}", msg, e);
+        }
+    }
+}

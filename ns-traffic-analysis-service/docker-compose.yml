@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  # ---- БД пользователей для анализа трафика ----
+  users_db:
+    image: postgres:16
+    container_name: postgres_usersDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: usersDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5432:5432"
+    volumes:
+      - analysis-db-data:/var/lib/postgresql/data
+
+  # ---- БД для отчетов cервиса анализа ----
+  reports_analysis_db:
+    image: postgres:16
+    container_name: postgres_reports_analysisDB
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: reportsDB
+      POSTGRES_USER: yakdanol
+      POSTGRES_PASSWORD: yakdanol
+    ports:
+      - "5433:5432"
+    volumes:
+      - reports-db-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:latest
+    container_name: redis_analysisCache
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+#  volumes:
+#    db-data:
+#      driver: local
+#    redis-data:
+#      driver: local
