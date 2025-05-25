@@ -14,6 +14,7 @@ import org.yakdanol.admininterface.config.WebClientConfig;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Set;
 
 @Route("")
 @PageTitle("Traffic Admin")
@@ -40,9 +41,10 @@ public class MainView extends VerticalLayout {
         serviceKind.setValue(ServiceKind.ANALYSIS);
 
         // 2. Сотрудник
-        ComboBox<String> userBox = new ComboBox<>("Сотрудник");
+        MultiSelectComboBox<String> userBox = new MultiSelectComboBox<>("Сотрудник");
         userBox.setPlaceholder("Загрузка…");
-        loadUsers(userBox);                      // <-- новый способ
+        userBox.setWidth("320px");
+        loadUsers(userBox);
 
         // 3. Тип источника
         RadioButtonGroup<DataSource> source = new RadioButtonGroup<>();
@@ -56,7 +58,7 @@ public class MainView extends VerticalLayout {
         action.setItems(ActionKind.START, ActionKind.STOP);
         action.setValue(ActionKind.START);
 
-        // Кнопка
+        // Кнопка отправки
         Button send = new Button("Отправить", e -> callMicroservice(
                 serviceKind.getValue(),
                 action.getValue(),
@@ -66,67 +68,88 @@ public class MainView extends VerticalLayout {
         send.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
         send.setEnabled(false);
 
+        setSizeFull();
+        setJustifyContentMode(JustifyContentMode.CENTER);
+        setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+
         userBox.addValueChangeListener(ev ->
-                send.setEnabled(userBox.getValue() != null && !userBox.getValue().isBlank())
-        );
+                send.setEnabled(!userBox.getSelectedItems().isEmpty()));
 
         return new VerticalLayout(serviceKind, userBox, source, action, send);
     }
 
     /** Загружаем список ФИО */
-    private void loadUsers(ComboBox<String> box) {
-        // Формируем URL: http://localhost:8082/api/v1/analysis/users
+    private void loadUsers(MultiSelectComboBox<String> box) {
+        // 1) Формируем URL: http://*/api/v1/analysis/users
         String url = webClientConfig.baseUrl(ServiceKind.ANALYSIS)
                 + ServiceKind.ANALYSIS.urlPart()
                 + "/users";
 
-        // Запросим прямо List<String>
+        // 2) Запросим List<String> ФИО
         Mono<List<String>> req = webClient.get()
                 .uri(url)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<List<String>>() {});
 
-        UI ui = UI.getCurrent();  // берём текущий UI для безопасных обновлений
+        // 3) Берём текущий UI для безопасных обновлений
+        UI ui = UI.getCurrent();
 
         req.subscribe(
                 users -> ui.access(() -> {
-                    box.setItems(users);
+                    box.setItems(users);               // наполняем MultiSelectComboBox
                     box.setPlaceholder("Выберите");
                 }),
-                error -> ui.access(() ->
+                err -> ui.access(() ->      // показываем Notification в случае ошибки
                         Notification.show(
-                                "Не удалось загрузить список: " + error.getMessage(),
+                                "Не удалось загрузить список сотрудников: "
+                                        + err.getMessage(),
                                 4000, Notification.Position.TOP_CENTER))
         );
     }
 
 
-// 2) Вызов микросервиса с безопасным показом Notification
+// 2) Вызов микросервиса с показом Notification
+private void callMicroservice(ServiceKind svc,
+                              ActionKind act,
+                              DataSource src,
+                              Set<String> selectedUsers) {
+    // Вычисляем базовый URL: analysis или security
+    String base = webClientConfig.baseUrl(svc);
 
-    private void callMicroservice(ServiceKind svc,
-                                  ActionKind act,
-                                  DataSource src,
-                                  String username) {
+    // Определяем, batch-запрос или одиночный
+    boolean batch = selectedUsers.size() > 1;
 
-        String base = webClientConfig.baseUrl(svc);  // http://localhost:8082 или …:8083
-        String path = svc.urlPart() + src.urlPart() + act.urlPart() + "/" + username;
+    // Строим путь
+    String path = svc.urlPart() + src.urlPart() + act.urlPart();
+    WebClient.RequestBodySpec spec = webClient.post().uri(base + path);
 
-        UI ui = UI.getCurrent();
-
-        webClient.post()
-                .uri(base + path)
+    Mono<String> response;
+    if (batch) {
+        response = spec
+                .bodyValue(selectedUsers)
                 .retrieve()
-                .bodyToMono(String.class)
-                .subscribe(
-                        msg -> ui.access(() ->
-                                Notification.show(msg, 3000, Notification.Position.TOP_CENTER)),
-                        err -> ui.access(() ->
-                                Notification.show("Ошибка: " + err.getMessage(),
-                                        3000, Notification.Position.TOP_CENTER))
-                );
+                .bodyToMono(String.class);
+    } else {
+        String user = selectedUsers.iterator().next();
+        response = webClient.post()
+                .uri(base + path + "/" + user)
+                .retrieve()
+                .bodyToMono(String.class);
     }
 
-    /* ---------- enum-утилиты (без изменений) ---------------------------- */
+    // Получаем UI для Notification
+    UI ui = UI.getCurrent();
+
+    response.subscribe(
+            msg -> ui.access(() ->
+                    Notification.show(msg, 4000, Notification.Position.TOP_CENTER)
+            ),
+            err -> ui.access(() ->
+                    Notification.show("Ошибка: " + err.getMessage(),
+                            4000, Notification.Position.TOP_CENTER)
+            )
+    );
+}
 
     public enum ServiceKind {
         ANALYSIS("/api/v1/analysis"), SECURITY("/api/v1/security");

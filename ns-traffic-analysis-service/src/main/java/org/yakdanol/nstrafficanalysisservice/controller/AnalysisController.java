@@ -27,7 +27,7 @@ class AnalysisController {
     @PostMapping("/live/start/{username}")
     public ResponseEntity<?> startLive(@PathVariable String username) {
         enqueue(username, DataSource.KAFKA);
-        String message = String.format("Live-анализ для пользователя '%s' добавлен в очередь.", username);
+        String message = String.format("Live-анализ для пользователя '%s' успешно запущен.", username);
         return ResponseEntity.accepted().body(message);
     }
 
