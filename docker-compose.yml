@@ -2,49 +2,35 @@ version: '3.8'
 
 services:
 # PostgreSQL
-  # БД пользователей для анализа трафика
-  users-db:
+  # БД для security‐микросервиса
+  security-db:
     image: postgres:16
-    container_name: postgres_usersDB
+    container_name: postgres_securityDB
     restart: unless-stopped
     environment:
-      POSTGRES_DB: usersDB
+      POSTGRES_DB: securityDB
       POSTGRES_USER: yakdanol
       POSTGRES_PASSWORD: yakdanol
     ports:
       - "5432:5432"
     volumes:
-      - db-users-data:/var/lib/postgresql/data
+      - security-db-data:/var/lib/postgresql/data
 
-  # БД для отчетов analysis‐микросервиса
-  reports_analysis_db:
+  # БД для analysis‐микросервиса
+  analysis_db:
     image: postgres:16
-    container_name: postgres_reports_analysisDB
+    container_name: postgres_analysisDB
     restart: unless-stopped
     environment:
-      POSTGRES_DB: reportsDB
-      POSTGRES_USER: yakdanol
-      POSTGRES_PASSWORD: yakdanol
-    ports:
-      - "5434:5432"
-    volumes:
-      - reports-analysis-db-data:/var/lib/postgresql/data
-
-  # БД для отчетов security‐микросервиса
-  reports_security_db:
-    image: postgres:16
-    container_name: postgres_reports_securityDB
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: reportsDB
+      POSTGRES_DB: analysisDB
       POSTGRES_USER: yakdanol
       POSTGRES_PASSWORD: yakdanol
     ports:
       - "5433:5432"
     volumes:
-      - reports-security-db-data:/var/lib/postgresql/data
+      - analysis-db-data:/var/lib/postgresql/data
 
-  # БД пользователей для анализа трафика
+  # БД для notification-микросервиса
   users-notification-db:
     image: postgres:16
     container_name: postgres_notification_usersDB
@@ -58,8 +44,7 @@ services:
     volumes:
       - db-notification-users-data:/var/lib/postgresql/data
 
-#Redis
-
+# Redis
   # Redis для analysis‐микросервиса
   redis_analysis:
     image: redis:latest
@@ -83,13 +68,11 @@ services:
       - redis-security-data:/data
 
 volumes:
-  db-users-data:
+  security-db-data:
     driver: local
   db-notification-users-data:
     driver: local
-  reports-security-db-data:
-    driver: local
-  reports-analysis-db-data:
+  analysis-db-data:
     driver: local
   redis-analysis-data:
     driver: local

@@ -1,6 +1,5 @@
 package org.yakdanol.nstrafficanalysisservice.service.consumer;
 
-import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -10,49 +9,65 @@ import org.pcap4j.packet.IllegalRawDataException;
 import org.pcap4j.packet.Packet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.yakdanol.nstrafficanalysisservice.config.TrafficAnalysisConfig;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 
 @Service("analysisKafkaPacketConsumer")
-public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, DisposableBean {
+public class KafkaPacketConsumer implements PacketConsumer {
     private final static Logger logger = LoggerFactory.getLogger(KafkaPacketConsumer.class);
-    private final TrafficAnalysisConfig trafficAnalysisConfigs;
-    private final Consumer<String, byte[]> consumer;
-    private volatile boolean initialized = false; // Флаг, показывающий, успешно ли инициализировали Kafka
+    private final TrafficAnalysisConfig trafficAnalysisConfig;
+
+    private final KafkaConsumer<String, byte[]> consumer;
+    private volatile boolean stopped = false;
 
     @Autowired
     public KafkaPacketConsumer(@Qualifier("consumerConfigs") Map<String, Object> consumerConfigs,
-                               TrafficAnalysisConfig trafficAnalysisConfigs) {
-        this.trafficAnalysisConfigs = trafficAnalysisConfigs;
+                               TrafficAnalysisConfig trafficAnalysisConfig) {
+        this.trafficAnalysisConfig = trafficAnalysisConfig;
         this.consumer = new KafkaConsumer<>(consumerConfigs);
     }
 
-    @Override
-    public void afterPropertiesSet() {
-        String topic = trafficAnalysisConfigs.getKafkaConsumerConfigs().getTopicName();
-        consumer.subscribe(Collections.singletonList(topic));
-        initialized = true;
+    public void subscribe(String topic) {
         logger.info("KafkaPacketConsumer: subscribed to topic \"{}\"", topic);
+        consumer.subscribe(List.of(topic));
+    }
+
+    @Override
+    public List<Packet> getPackets() throws IllegalRawDataException {
+
+        try {
+            int maxRetries = trafficAnalysisConfig.getKafkaConsumerConfigs().getRetries();
+            long retryDelay = trafficAnalysisConfig.getKafkaConsumerConfigs().getRetryDelayMs();
+            Duration pollTimeout = Duration.ofSeconds(trafficAnalysisConfig.getKafkaConsumerConfigs().getCallbackTimeoutS());
+
+            ConsumerRecords<String, byte[]> records = consumer.poll(pollTimeout);
+            if (records.isEmpty()) return List.of();
+
+            List<Packet> resultList = new ArrayList<>(records.count());
+            for (ConsumerRecord<String, byte[]> record : records) {
+                byte[] raw = record.value();
+                resultList.add(EthernetPacket.newPacket(raw, 0, raw.length));
+            }
+            consumer.commitSync();
+
+            return resultList;
+        } catch (WakeupException ex) {
+            if (stopped) throw ex; // close() вызван
+            return List.of();
+        }
     }
 
     @Override
     public Packet getPacket() throws IllegalRawDataException {
-        if (!initialized) {
-            logger.error("getPacket() called before initialization");
-            throw new IllegalStateException("KafkaPacketConsumer is not initialized");
-        }
 
-        int maxRetries = trafficAnalysisConfigs.getKafkaConsumerConfigs().getRetries();
-        long retryDelay = trafficAnalysisConfigs.getKafkaConsumerConfigs().getRetryDelayMs();
-        Duration pollTimeout = Duration.ofSeconds(trafficAnalysisConfigs.getKafkaConsumerConfigs().getCallbackTimeoutS());
+        int maxRetries = trafficAnalysisConfig.getKafkaConsumerConfigs().getRetries();
+        long retryDelay = trafficAnalysisConfig.getKafkaConsumerConfigs().getRetryDelayMs();
+        Duration pollTimeout = Duration.ofSeconds(trafficAnalysisConfig.getKafkaConsumerConfigs().getCallbackTimeoutS());
 
         for (int attempt = 1; ; attempt++) {
             try {
@@ -104,9 +119,25 @@ public class KafkaPacketConsumer implements PacketConsumer, InitializingBean, Di
         }
     }
 
+    public void unsubscribe() {
+        logger.info("KafkaPacketConsumer: unsubscribed from topic");
+        consumer.unsubscribe();
+    }
+
     @Override
-    public void destroy() {
+    public void cancel() {
         try {
+            logger.info("Trying to stop Task and close KafkaPacketConsumer");
+            consumer.wakeup();
+        } catch (Exception e) {
+            logger.error("Error during Kafka consumer shutdown: {}", e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            stopped = true;
             consumer.wakeup();
             consumer.close();
             logger.info("KafkaPacketConsumer closed successfully");

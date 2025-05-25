@@ -4,6 +4,7 @@ server:
 traffic-security:
   general-configs:
     data-source: FILE
+    processing-mode: "parallel"
     pool-size: 6           # Кол-во потоков многопоточной работы
     queue-size: 100
     batch-size: 20
@@ -38,7 +39,7 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/usersDB
+    url: jdbc:postgresql://localhost:5432/securityDB
     username: yakdanol
     password: yakdanol
   jpa:

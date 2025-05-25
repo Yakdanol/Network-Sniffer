@@ -1,4 +1,4 @@
-package org.yakdanol.nstrafficsecurityservice.service.report;
+package org.yakdanol.nstrafficanalysisservice.service.report;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
@@ -7,13 +7,13 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "security_report_summary")
+@Table(name = "analysis_report_summary")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SecurityReportSummary {
+public class AnalysisReportSummary {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,3 +31,4 @@ public class SecurityReportSummary {
 
     private int threatsFound;
 }
+
