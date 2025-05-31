@@ -4,15 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.pcap4j.core.NotOpenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.yakdanol.nstrafficsecurityservice.service.DataSource;
 import org.yakdanol.nstrafficsecurityservice.service.processing.ProcessingCoordinatorService;
 import org.yakdanol.nstrafficsecurityservice.users.request.SecurityAnalysisRequest;
+import org.yakdanol.nstrafficsecurityservice.users.storage.Users;
 import org.yakdanol.nstrafficsecurityservice.users.storage.UsersService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/security")
@@ -74,5 +74,13 @@ class SecurityController {
 
     private void cancel(String username) throws NotOpenException {
         processingCoordinatorService.cancel(username);
+    }
+
+    @GetMapping("/users")
+    public List<String> list() {
+        return usersService.findAllUsers()
+                .stream()
+                .map(Users::getFullName)
+                .toList();
     }
 }
