@@ -64,7 +64,6 @@ public class TelegramNotificationSender implements NotificationSender {
                         .build()
                         .toUri();
                 telegramRestTemplate.getForObject(uri, String.class);
-//                telegramRestTemplate.getForEntity(uri, String.class);
             } catch (Exception e) {
                 log.error("Failed to send Telegram notification to chatId: {}. Attempting retry.", chatId, e);
                 throw e;

@@ -47,12 +47,6 @@ dependencies {
     // PostgreSQL
     implementation 'org.postgresql:postgresql:42.7.3'
 
-//    // H2
-//    implementation 'com.h2database:h2:2.2.224'
-//
-//    // Liquibase
-//    implementation 'org.liquibase:liquibase-core:4.29.2'
-
     // Hibernate
     implementation 'org.hibernate:hibernate-validator:8.0.0.Final'
 
