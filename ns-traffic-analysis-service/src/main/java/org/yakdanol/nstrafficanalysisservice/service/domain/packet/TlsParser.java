@@ -58,7 +58,7 @@ public class TlsParser {
             }
         }
 
-        log.info("extractSniFromTls: SNI не найден");
+        log.debug("extractSniFromTls: SNI не найден");
         return null;
     }
 
@@ -147,7 +147,7 @@ public class TlsParser {
      *         затем [1 байт name_type, 2 байта name_len, name...], и т.д.
      */
     private static String parseServerNameExtension(byte[] data, int start, int length) {
-        log.info("Зашли в метод поиска Имени сервера parseServerNameExtension");
+        log.debug("Зашли в метод поиска Имени сервера parseServerNameExtension");
         ByteBuffer buffer = ByteBuffer.wrap(data, start, length);
         if (buffer.remaining() < 2) {
             log.debug("parseServerNameExtension: мало байт для server_name_list_length");
@@ -170,7 +170,7 @@ public class TlsParser {
             if (nameType == 0x00) {
                 byte[] sniBytes = new byte[nameLen];
                 buffer.get(sniBytes);
-                log.info("Получили имя сервера");
+                log.debug("Получили имя сервера");
                 return new String(sniBytes, StandardCharsets.UTF_8);
             } else {
                 // пропускаем, если nameType != 0

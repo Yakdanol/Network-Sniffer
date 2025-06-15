@@ -34,16 +34,15 @@ dependencies {
     // PostgreSQL
     implementation 'org.postgresql:postgresql:42.7.3'
 
-    // H2 database
-    implementation 'com.h2database:h2:2.2.224'
-    runtimeOnly 'com.h2database:h2:2.2.224'
-
     // Pcap4j
     implementation 'org.pcap4j:pcap4j-core:1.8.2'
     implementation 'org.pcap4j:pcap4j-packetfactory-static:1.8.2'
 
     // Jackson-databind
     implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // IP2region
+    implementation 'org.lionsoul:ip2region:2.7.0'
 
     // PDF builder
     implementation("com.github.librepdf:openpdf:2.0.3")

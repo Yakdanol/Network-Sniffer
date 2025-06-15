@@ -1,6 +1,36 @@
 version: '3.8'
 
 services:
+  # Zookeeper для Kafka
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+    container_name: zookeeper
+    restart: unless-stopped
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/bitnami
+
+  # Kafka-брокер
+  kafka:
+    image: bitnami/kafka:3.4
+    container_name: kafka
+    restart: unless-stopped
+    environment:
+      KAFKA_BROKER_ID: "1"
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092"
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/bitnami
+    depends_on:
+      - zookeeper
+
 # PostgreSQL
   # БД для security‐микросервиса
   security-db:

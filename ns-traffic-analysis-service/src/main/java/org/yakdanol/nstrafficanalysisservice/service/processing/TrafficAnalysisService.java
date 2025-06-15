@@ -67,15 +67,12 @@ public class TrafficAnalysisService {
             List<Packet> batch;
             while (!(batch = consumer.getPackets()).isEmpty()) {
                 for (Packet packet : batch) {
-                    allDomains.addAll(processor.accept(packet));
-
-                    int fired = analysisManager.detectThreats(
-                            processor.accept(packet),   // свежие в этом пакете
-                            internalUserName,
-                            threats);
+                    List<DomainHit> hits = processor.accept(packet);
+                    allDomains.addAll(hits);
+                    int fired = analysisManager.detectThreats(hits, internalUserName, threats);
                     threatsTotal.increment(fired);
-                    packetCount += batch.size();
                 }
+                packetCount += batch.size();
             }
         } catch (IllegalRawDataException | NotOpenException e) {
             logger.error("TrafficAnalysisService: Failed to analyse packet for user {}, with exception {} ", internalUserName, e.getMessage(), e);

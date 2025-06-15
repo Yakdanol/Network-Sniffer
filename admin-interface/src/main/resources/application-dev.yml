@@ -1,0 +1,7 @@
+server:
+  port: 8085
+
+admin-ui:
+  services:
+    analysis: http://localhost:8082   # микросервис анализа трафика
+    security: http://localhost:8083   # микросервис проверки безопасности
