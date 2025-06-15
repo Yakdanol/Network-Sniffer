@@ -20,13 +20,10 @@ public class PacketProcessor {
     /** Максимальное количество сегментов, которое собираем на поток */
     public static final int MAX_SEGMENTS_PER_FLOW = 20;
 
-    /* ==== STATE  ====================================================== */
-    private final Map<FlowKey, FlowState> flows =
-            new ConcurrentHashMap<>(16_384);
+    private final Map<FlowKey, FlowState> flows = new ConcurrentHashMap<>(16_384);
 
-    /** отдаём наружу все обнаруженные домены за время анализа */
+    /** Возвращаем все обнаруженные домены за время анализа */
     public List<DomainHit> accept(Packet packet) {
-
         IpPacket  ip  = packet.get(IpPacket.class);
         TcpPacket tcp = packet.get(TcpPacket.class);
 
@@ -59,16 +56,13 @@ public class PacketProcessor {
         return state.drainNewHits();
     }
 
-    /* ==== CALLBACK from FlowState ===================================== */
     private void onSniFound(FlowState st, String sni) {
-        log.info("[SNI] {} -> {}", st.getFlowKey(), sni);
+        log.debug("[SNI] {} -> {}", st.getFlowKey(), sni);
     }
 
-    /* ==== GC dead flows =============================================== */
     private void purgeExpiredFlows() {
         long now = System.nanoTime();
         flows.entrySet().removeIf(e ->
                 TimeUnit.NANOSECONDS.toSeconds(now - e.getValue().getLastSeen()) > FLOW_TTL_SEC);
     }
 }
-
